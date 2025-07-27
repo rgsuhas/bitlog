@@ -18,7 +18,7 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
-import { createClientSupabase } from '@/lib/supabase';
+import { createClientSupabase } from '@/lib/supabase/client';
 import { authService, type ExtendedUser, type AuthResult } from '@/lib/auth';
 
 /**

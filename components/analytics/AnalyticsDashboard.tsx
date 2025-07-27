@@ -381,6 +381,9 @@ export function AnalyticsDashboard({
     setRefreshing(false);
   };
 
+    const [range, setRange] = useState<"7d" | "30d" | "90d" | "1y">("7d");
+
+
   /**
    * Export analytics data
    */
@@ -431,7 +434,7 @@ export function AnalyticsDashboard({
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Select value={selectedDateRange} onValueChange={setSelectedDateRange}>
+        <Select onValueChange={(value) => setRange(value as "7d" | "30d" | "90d" | "1y")}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
