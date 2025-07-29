@@ -6,7 +6,14 @@ const nextConfig = {
     ignoreDuringBuilds: true,
     reactStrictMode: true,
   },
-  images: { unoptimized: true },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+    ],
+  },
 };
 
 module.exports = nextConfig;
