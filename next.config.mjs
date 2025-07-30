@@ -1,10 +1,9 @@
+// next.config.mjs
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
-  
+  reactStrictMode: true,
   eslint: {
     ignoreDuringBuilds: true,
-    reactStrictMode: true,
   },
   images: {
     remotePatterns: [
@@ -16,4 +15,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;

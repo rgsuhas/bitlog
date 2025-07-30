@@ -134,3 +134,9 @@ export interface PaginatedResponse<T> {
   /** Whether there are pages before current */
   hasPrev: boolean;
 }
+
+
+// types/index.ts
+export interface PageParams {
+  params: { slug: string };
+}
