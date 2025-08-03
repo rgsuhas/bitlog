@@ -1,10 +1,28 @@
-import { getAllPosts } from '@/lib/posts';
-import BlogList from '@/components/blog/BlogList';
+import { PostCard } from '@/components/PostCard'
+import { TopNav } from '@/components/TopNav'
+import { getAllPosts } from '@/data/posts'
 
-// Force dynamic rendering to avoid build-time issues
-export const dynamic = 'force-dynamic';
+export default function BlogPage() {
+  const allPosts = getAllPosts()
 
-export default async function BlogListPage() {
-  const posts = await getAllPosts();
-  return <BlogList posts={posts} />;
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">All Posts</h1>
+        <p className="text-muted-foreground">
+          Browse through all our articles and insights
+        </p>
+      </div>
+      
+      <TopNav />
+      
+      {/* Posts */}
+      <div className="space-y-6">
+        {allPosts.map((post) => (
+          <PostCard key={post.id} post={post} />
+        ))}
+      </div>
+    </div>
+  )
 }
