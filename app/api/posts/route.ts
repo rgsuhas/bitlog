@@ -19,9 +19,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllPosts, getPaginatedPosts } from '@/lib/posts';
-import { Post, CreatePostData, PaginationParams, ApiResponse } from '@/lib/types';
-import { generateSlug, validateMarkdown, estimateReadingTime } from '@/lib/markdown';
+import { createServerSupabase } from '@/lib/supabase/server';
+import { dbUtils } from '@/lib/supabase/utils';
+import { serverAuth } from '@/lib/auth-server';
+import { Post, CreatePostData } from '@/lib/types';
 
 /**
  * CORS headers for cross-origin requests
@@ -46,262 +47,136 @@ export async function OPTIONS() {
 
 /**
  * GET /api/posts
- * 
- * Retrieves blog posts with optional pagination and filtering.
- * Supports query parameters for search, filtering, and pagination.
- * 
- * Query Parameters:
- * - page: Page number (default: 1)
- * - limit: Items per page (default: 10, max: 50)
- * - search: Search term for title/content
- * - tag: Filter by specific tag
- * - status: Filter by post status (draft, published, archived)
- * - featured: Filter featured posts (true/false)
- * 
- * @param request - Next.js request object
- * @returns JSON response with posts data or error
- * 
- * @example
- * GET /api/posts?page=1&limit=10&search=react&tag=tutorial
+ * Get all posts with pagination and filtering
  */
 export async function GET(request: NextRequest) {
   try {
+    const supabase = createServerSupabase();
     const { searchParams } = new URL(request.url);
     
-    // Parse query parameters with defaults and validation
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
-    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '10')));
-    const search = searchParams.get('search') || undefined;
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const status = searchParams.get('status') as 'draft' | 'published' | 'archived' | undefined;
     const tag = searchParams.get('tag') || undefined;
-    const status = searchParams.get('status') as 'draft' | 'published' | 'archived' || undefined;
-    const featuredParam = searchParams.get('featured');
-    const featured = featuredParam ? featuredParam === 'true' : undefined;
+    const search = searchParams.get('search') || undefined;
 
-    // Determine if pagination is requested
-    const isPaginated = searchParams.has('page') || searchParams.has('limit');
+    // Get posts with pagination
+    const posts = await dbUtils.getPaginatedPosts(supabase, {
+      page,
+      limit,
+      status,
+      tag,
+      search
+    });
 
-    let responseData;
-
-    if (isPaginated) {
-      // Return paginated results
-      const paginationParams: PaginationParams = {
-        page,
-        limit,
-        search,
-        tag,
-        status,
-      };
-
-      responseData = await getPaginatedPosts(paginationParams);
-    } else {
-      // Return all posts (for simple use cases)
-      const posts = await getAllPosts(featured);
-      
-      // Apply additional filtering if needed
-      let filteredPosts = posts;
-      
-      if (search) {
-        const searchLower = search.toLowerCase();
-        filteredPosts = filteredPosts.filter(post =>
-          post.title.toLowerCase().includes(searchLower) ||
-          post.excerpt.toLowerCase().includes(searchLower) ||
-          post.content.toLowerCase().includes(searchLower) ||
-          post.tags.some(tag => tag.toLowerCase().includes(searchLower))
-        );
-      }
-      
-      if (tag) {
-        filteredPosts = filteredPosts.filter(post =>
-          post.tags.some(postTag => postTag.toLowerCase() === tag.toLowerCase())
-        );
-      }
-      
-      if (status) {
-        filteredPosts = filteredPosts.filter(post => post.status === status);
-      }
-
-      responseData = filteredPosts;
-    }
-
-    // Return successful response
-    const response: ApiResponse<typeof responseData> = {
+    return NextResponse.json({
       success: true,
-      data: responseData,
-    };
-
-    return NextResponse.json(response, {
-      status: 200,
-      headers: corsHeaders,
+      data: posts
     });
 
   } catch (error) {
-    console.error('Error in GET /api/posts:', error);
-
-    const errorResponse: ApiResponse = {
-      success: false,
-      error: 'Failed to fetch posts',
-      details: process.env.NODE_ENV === 'development' ? error : undefined,
-    };
-
-    return NextResponse.json(errorResponse, {
-      status: 500,
-      headers: corsHeaders,
-    });
+    console.error('Error fetching posts:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to fetch posts' },
+      { status: 500 }
+    );
   }
 }
 
 /**
  * POST /api/posts
- * 
- * Creates a new blog post with validation and automatic metadata generation.
- * Handles slug generation, content validation, and reading time estimation.
- * 
- * Request Body:
- * - title: Post title (required)
- * - content: Markdown content (required)
- * - excerpt: Brief description (optional, auto-generated if not provided)
- * - tags: Array of tags (optional)
- * - status: Post status (default: 'draft')
- * - featured: Whether post is featured (default: false)
- * - coverImage: Cover image URL (optional)
- * - metaDescription: SEO meta description (optional)
- * 
- * @param request - Next.js request object with JSON body
- * @returns JSON response with created post data or error
- * 
- * @example
- * POST /api/posts
- * {
- *   "title": "My New Post",
- *   "content": "# Hello World\n\nThis is my first post!",
- *   "tags": ["tutorial", "beginner"]
- * }
+ * Create a new post
  */
 export async function POST(request: NextRequest) {
   try {
-    // Parse and validate request body
-    let body: Partial<CreatePostData>;
-    
-    try {
-      body = await request.json();
-    } catch (parseError) {
-      const errorResponse: ApiResponse = {
-        success: false,
-        error: 'Invalid JSON in request body',
-      };
+    const supabase = createServerSupabase();
+    const user = await serverAuth.getUser();
 
-      return NextResponse.json(errorResponse, {
-        status: 400,
-        headers: corsHeaders,
-      });
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
+
+    const body = await request.json();
+    const { title, content, excerpt, tags, status = 'draft', featured = false, coverImage, metaDescription } = body;
 
     // Validate required fields
-    if (!body.title || typeof body.title !== 'string' || body.title.trim().length === 0) {
-      const errorResponse: ApiResponse = {
-        success: false,
-        error: 'Title is required and must be a non-empty string',
-      };
-
-      return NextResponse.json(errorResponse, {
-        status: 400,
-        headers: corsHeaders,
-      });
-    }
-
-    if (!body.content || typeof body.content !== 'string' || body.content.trim().length === 0) {
-      const errorResponse: ApiResponse = {
-        success: false,
-        error: 'Content is required and must be a non-empty string',
-      };
-
-      return NextResponse.json(errorResponse, {
-        status: 400,
-        headers: corsHeaders,
-      });
-    }
-
-    // Validate markdown content
-    const contentValidationIssues = validateMarkdown(body.content);
-    if (contentValidationIssues.length > 0) {
-      const errorResponse: ApiResponse = {
-        success: false,
-        error: 'Content validation failed',
-        details: contentValidationIssues,
-      };
-
-      return NextResponse.json(errorResponse, {
-        status: 400,
-        headers: corsHeaders,
-      });
+    if (!title || !content) {
+      return NextResponse.json(
+        { success: false, error: 'Title and content are required' },
+        { status: 400 }
+      );
     }
 
     // Generate slug from title
-    const slug = generateSlug(body.title);
-
-    // Auto-generate excerpt if not provided
-    const excerpt = body.excerpt || body.content.substring(0, 200).replace(/[#*`]/g, '').trim() + '...';
+    const slug = generateSlug(title);
+    
+    // Check if slug already exists
+    const existingPost = await dbUtils.getPostBySlug(supabase, slug);
+    if (existingPost) {
+      return NextResponse.json(
+        { success: false, error: 'A post with this title already exists' },
+        { status: 409 }
+      );
+    }
 
     // Calculate reading time
-    const readTime = estimateReadingTime(body.content);
+    const wordCount = content.split(/\s+/).length;
+    const readingTime = Math.ceil(wordCount / 200); // Average reading speed
 
-    // Create new post object
-    const newPost: CreatePostData = {
+    // Create post data for database
+    const postData = {
       slug,
-      title: body.title.trim(),
-      excerpt: excerpt.trim(),
-      content: body.content.trim(),
-      author: {
-        // In production, this would come from authentication
-        id: '1',
-        name: 'Current User',
-        email: 'user@example.com',
-        initials: 'CU',
-        bio: 'Blog author',
-      },
-      status: body.status || 'draft',
-      readTime,
-      tags: Array.isArray(body.tags) ? body.tags.filter(tag => typeof tag === 'string' && tag.trim()) : [],
-      featured: Boolean(body.featured),
-      coverImage: typeof body.coverImage === 'string' ? body.coverImage.trim() || undefined : undefined,
-      metaDescription: typeof body.metaDescription === 'string' ? body.metaDescription.trim() || undefined : undefined,
+      title,
+      content,
+      excerpt: excerpt || content.substring(0, 160),
+      author_id: user.id,
+      status,
+      read_time: readingTime,
+      tags: tags || [],
+      featured,
+      cover_image: coverImage,
+      meta_description: metaDescription || excerpt || content.substring(0, 160),
+      published_at: status === 'published' ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      view_count: 0
     };
 
-    // In production, this would save to database
-    // const savedPost = await createPost(newPost);
-    
-    // For now, simulate database save
-    const savedPost: Post = {
-      ...newPost,
-      id: Date.now().toString(), // Generate temporary ID
-      publishedAt: newPost.status === 'published' ? new Date().toISOString() : '',
-      updatedAt: new Date().toISOString(),
-      viewCount: 0,
-    };
+    // Create post in database
+    const post = await dbUtils.createPost(supabase, postData);
 
-    // Return successful response
-    const response: ApiResponse<Post> = {
+    if (!post) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to create post' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
       success: true,
-      data: savedPost,
-    };
-
-    return NextResponse.json(response, {
-      status: 201,
-      headers: corsHeaders,
-    });
+      data: post
+    }, { status: 201 });
 
   } catch (error) {
-    console.error('Error in POST /api/posts:', error);
-
-    const errorResponse: ApiResponse = {
-      success: false,
-      error: 'Failed to create post',
-      details: process.env.NODE_ENV === 'development' ? error : undefined,
-    };
-
-    return NextResponse.json(errorResponse, {
-      status: 500,
-      headers: corsHeaders,
-    });
+    console.error('Error creating post:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to create post' },
+      { status: 500 }
+    );
   }
+}
+
+/**
+ * Generate a URL-friendly slug from title
+ */
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with hyphens
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
 }

@@ -14,7 +14,8 @@
  * - Security features (rate limiting, password validation)
  */
 
-import { createClientSupabase, createServerSupabase, dbUtils, type DatabaseProfile } from './supabase';
+import { createClientSupabase } from '@/lib/supabase/client';
+import { dbUtils, type DatabaseProfile } from './supabase';
 import { User, AuthError, Session } from '@supabase/supabase-js';
 
 /**
@@ -266,6 +267,73 @@ export class AuthService {
   }
 
   /**
+   * Login with OAuth provider
+   * 
+   * @param provider - OAuth provider (google or github)
+   * @returns Authentication result with redirect URL or error
+   * 
+   * @example
+   * ```typescript
+   * const authService = new AuthService();
+   * const result = await authService.loginWithOAuth('google');
+   * 
+   * if (result.success) {
+   *   window.location.href = result.data.url;
+   * }
+   * ```
+   */
+  async loginWithOAuth(provider: 'google' | 'github'): Promise<AuthResult<{ url: string }>> {
+    try {
+      console.log(`[AUTH] Starting OAuth login with provider: ${provider}`);
+      
+      const { data, error } = await this.supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/api/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+
+      console.log(`[AUTH] OAuth signInWithOAuth response:`, { data, error });
+
+      if (error) {
+        console.error(`[AUTH] OAuth login error:`, error);
+        return {
+          success: false,
+          error: error.message || 'OAuth login failed',
+          data: null
+        };
+      }
+
+      if (!data.url) {
+        console.error(`[AUTH] No redirect URL received from OAuth provider`);
+        return {
+          success: false,
+          error: 'No redirect URL received from OAuth provider',
+          data: null
+        };
+      }
+
+      console.log(`[AUTH] OAuth login successful, redirecting to: ${data.url}`);
+      return {
+        success: true,
+        error: null,
+        data: { url: data.url }
+      };
+    } catch (error) {
+      console.error(`[AUTH] Unexpected error during OAuth login:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unexpected error during OAuth login',
+        data: null
+      };
+    }
+  }
+
+  /**
    * Send password reset email
    * 
    * @param data - Password reset data containing email
@@ -347,6 +415,7 @@ export class AuthService {
       return {
         ...user,
         profile: profile || undefined,
+        role: profile?.role as UserRole,
       };
     } catch (error) {
       console.error('Error getting current user:', error);
@@ -376,8 +445,19 @@ export class AuthService {
    */
   async updateProfile(userId: string, data: UpdateProfileData): Promise<AuthResult<DatabaseProfile>> {
     try {
+      // Get current user to include email
+      const currentUser = await this.getCurrentUser();
+      if (!currentUser) {
+        return {
+          success: false,
+          error: 'User not found',
+        };
+      }
+
       const updateData = {
         id: userId,
+        email: currentUser.email!,
+        name: data.name || currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'User',
         ...data,
         updated_at: new Date().toISOString(),
       };
@@ -481,13 +561,67 @@ export class AuthService {
   }
 
   /**
+   * Create or update user profile for OAuth users
+   * 
+   * @param user - Authenticated user from OAuth
+   * @returns Result of profile creation/update
+   */
+  async createOrUpdateOAuthProfile(user: User): Promise<AuthResult<DatabaseProfile>> {
+    try {
+      // Check if profile already exists
+      const existingProfile = await dbUtils.getUserProfile(this.supabase, user.id);
+      
+      if (existingProfile) {
+        // Profile exists, just return it
+        return {
+          success: true,
+          data: existingProfile,
+        };
+      }
+
+      // Create new profile for OAuth user
+      const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'User';
+      
+      const profileData = {
+        id: user.id,
+        email: user.email!,
+        name: name,
+        role: 'author' as const, // Default role for OAuth users
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const profile = await dbUtils.upsertUserProfile(this.supabase, profileData);
+
+      if (!profile) {
+        return {
+          success: false,
+          error: 'Failed to create user profile',
+        };
+      }
+
+      return {
+        success: true,
+        data: profile,
+      };
+    } catch (error) {
+      console.error('Error creating OAuth user profile:', error);
+      return {
+        success: false,
+        error: 'Failed to create user profile',
+        details: error,
+      };
+    }
+  }
+
+  /**
    * Validate registration data
    * 
    * @private
    * @param data - Registration data to validate
    * @returns Validation result
    */
-  private validateRegistrationData(data: RegisterData): AuthResult<void> {
+  private validateRegistrationData(data: RegisterData): AuthResult<User> {
     if (!data.email || !data.password || !data.name) {
       return {
         success: false,
@@ -560,98 +694,9 @@ export class AuthService {
   }
 }
 
-/**
- * Server-side authentication utilities for API routes and Server Components
- */
-export const serverAuth = {
-  /**
-   * Get authenticated user from server context
-   * 
-   * @returns Current user or null if not authenticated
-   * 
-   * @example
-   * ```typescript
-   * // In API route or Server Component
-   * const user = await serverAuth.getUser();
-   * 
-   * if (!user) {
-   *   return new Response('Unauthorized', { status: 401 });
-   * }
-   * ```
-   */
-  async getUser(): Promise<User | null> {
-    try {
-      const supabase = createServerSupabase();
-      return await dbUtils.getCurrentUser(supabase);
-    } catch (error) {
-      console.error('Error getting server user:', error);
-      return null;
-    }
-  },
 
-  /**
-   * Require authentication for API routes
-   * 
-   * @returns Authenticated user or throws error
-   * 
-   * @example
-   * ```typescript
-   * // In API route
-   * try {
-   *   const user = await serverAuth.requireAuth();
-   *   // User is authenticated, proceed with request
-   * } catch (error) {
-   *   return new Response('Unauthorized', { status: 401 });
-   * }
-   * ```
-   */
-  async requireAuth(): Promise<User> {
-    const user = await this.getUser();
-    
-    if (!user) {
-      throw new Error('Authentication required');
-    }
-    
-    return user;
-  },
-
-  /**
-   * Check if user has required role for server-side operations
-   * 
-   * @param requiredRole - Required role for access
-   * @returns Boolean indicating if user has required role
-   * 
-   * @example
-   * ```typescript
-   * // In API route
-   * const hasAccess = await serverAuth.hasRole('admin');
-   * 
-   * if (!hasAccess) {
-   *   return new Response('Forbidden', { status: 403 });
-   * }
-   * ```
-   */
-  async hasRole(requiredRole: UserRole): Promise<boolean> {
-    try {
-      const user = await this.getUser();
-      if (!user) return false;
-
-      // In production, fetch user role from database
-      // For now, implement basic role checking
-      return true; // Placeholder implementation
-    } catch (error) {
-      console.error('Error checking user role:', error);
-      return false;
-    }
-  },
-};
 
 /**
  * Export singleton instance for client-side use
  */
 export const authService = new AuthService();
-
-/**
- * Type exports for use throughout the application
- */
-export type { ExtendedUser, UserRole, AuthResult, RegisterData, LoginData, UpdateProfileData };

@@ -1,15 +1,12 @@
 /**
- * Login Form Component
+ * OAuth Login Form Component
  * 
- * A comprehensive login form with validation, error handling, and beautiful design.
- * Integrates with the authentication system to provide secure user login functionality
- * with proper UX patterns and accessibility features.
+ * A simple login form that only supports OAuth providers (Google, GitHub).
+ * Provides a clean, modern interface for social login with proper error handling.
  * 
  * Features:
- * - Email and password validation
+ * - OAuth provider buttons (Google, GitHub)
  * - Loading states and error handling
- * - Remember me functionality
- * - Password reset integration
  * - Responsive design
  * - Accessibility compliance
  */
@@ -17,25 +14,17 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
 import { useAuth } from './AuthProvider';
 import { cn } from '@/lib/utils';
 import { 
-  Eye, 
-  EyeOff, 
-  Mail, 
-  Lock, 
   AlertCircle, 
   Loader2,
-  Github,
-  Chrome
+  Github
 } from 'lucide-react';
+import { authService } from '@/services/authService';
 
 /**
  * Props interface for the LoginForm component
@@ -43,167 +32,72 @@ import {
 interface LoginFormProps {
   /** Optional callback function called after successful login */
   onSuccess?: () => void;
-  /** Optional callback function called when user wants to switch to register */
-  onSwitchToRegister?: () => void;
   /** Optional CSS class name for styling customization */
   className?: string;
-  /** Whether to show social login options */
-  showSocialLogin?: boolean;
-  /** Whether to show the register link */
-  showRegisterLink?: boolean;
+  /** Redirect URL after successful login */
+  redirectTo?: string;
 }
 
 /**
- * Form data interface for type safety
- */
-interface LoginFormData {
-  email: string;
-  password: string;
-  rememberMe: boolean;
-}
-
-/**
- * Login Form Component
+ * OAuth Login Form Component
  * 
- * Renders a complete login form with validation, error handling, and integration
- * with the authentication system. Provides a smooth user experience with proper
- * loading states and error messages.
+ * Renders a simple login form with OAuth provider buttons.
+ * Provides a smooth user experience with proper loading states and error messages.
  * 
  * @param props - Component props
- * @returns JSX element representing the login form
+ * @returns JSX element representing the OAuth login form
  * 
  * @example
  * ```tsx
  * <LoginForm
  *   onSuccess={() => router.push('/dashboard')}
- *   onSwitchToRegister={() => setActiveTab('register')}
- *   showSocialLogin={true}
+ *   redirectTo="/dashboard"
  * />
  * ```
  */
 export function LoginForm({
   onSuccess,
-  onSwitchToRegister,
   className,
-  showSocialLogin = true,
-  showRegisterLink = true,
+  redirectTo = '/dashboard',
 }: LoginFormProps) {
   // Authentication context
-  const { signIn, loading } = useAuth();
-
-  // Form state
-  const [formData, setFormData] = useState<LoginFormData>({
-    email: '',
-    password: '',
-    rememberMe: false,
-  });
+  const { loading, setLoading } = useAuth();
 
   // UI state
-  const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<Partial<LoginFormData>>({});
-  const [submitError, setSubmitError] = useState<string>('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState<string | null>(null);
+  const [error, setError] = useState<string>('');
 
   /**
-   * Validate form data
+   * Handle OAuth login
    * 
-   * @param data - Form data to validate
-   * @returns Object containing validation errors
+   * @param provider - OAuth provider (google or github)
    */
-  const validateForm = (data: LoginFormData): Partial<LoginFormData> => {
-    const newErrors: Partial<LoginFormData> = {};
-
-    // Email validation
-    if (!data.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-      newErrors.email = 'Please enter a valid email address';
-    }
-
-    // Password validation
-    if (!data.password) {
-      newErrors.password = 'Password is required';
-    } else if (data.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-
-    return newErrors;
-  };
-
-  /**
-   * Handle input field changes
-   * 
-   * @param field - Field name to update
-   * @param value - New field value
-   */
-  const handleInputChange = (field: keyof LoginFormData, value: string | boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-
-    // Clear field error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: undefined,
-      }));
-    }
-
-    // Clear submit error when user makes changes
-    if (submitError) {
-      setSubmitError('');
-    }
-  };
-
-  /**
-   * Handle form submission
-   * 
-   * @param e - Form submission event
-   */
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Validate form
-    const validationErrors = validateForm(formData);
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-
-    setIsSubmitting(true);
-    setSubmitError('');
-
+  const handleOAuthLogin = async (provider: 'google' | 'github') => {
     try {
-      // Attempt to sign in
-      const result = await signIn(formData.email, formData.password);
+      console.log(`[LOGIN] Starting OAuth login with ${provider}`);
+      setLoading(true);
+      setError('');
+      
+      const result = await authService.loginWithOAuth(provider);
+      
+      console.log(`[LOGIN] OAuth login result:`, { 
+        success: result.success, 
+        error: result.error,
+        hasUrl: !!result.data?.url 
+      });
 
-      if (result.success) {
-        // Login successful
-        onSuccess?.();
+      if (result.success && result.data?.url) {
+        console.log(`[LOGIN] Redirecting to OAuth provider: ${result.data.url}`);
+        window.location.href = result.data.url;
       } else {
-        // Login failed
-        setSubmitError(result.error || 'Login failed. Please try again.');
+        console.error(`[LOGIN] OAuth login failed:`, result.error);
+        setError(result.error || 'Login failed. Please try again.');
       }
     } catch (error) {
-      console.error('Login error:', error);
-      setSubmitError('An unexpected error occurred. Please try again.');
+      console.error(`[LOGIN] Unexpected error during OAuth login:`, error);
+      setError('An unexpected error occurred. Please try again.');
     } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  /**
-   * Handle social login (placeholder for future implementation)
-   * 
-   * @param provider - Social login provider
-   */
-  const handleSocialLogin = async (provider: 'google' | 'github') => {
-    try {
-      // TODO: Implement social login with Supabase
-      console.log(`Social login with ${provider} - Coming soon!`);
-    } catch (error) {
-      console.error(`${provider} login error:`, error);
+      setLoading(false);
     }
   };
 
@@ -211,189 +105,74 @@ export function LoginForm({
     <Card className={cn("w-full max-w-md mx-auto", className)}>
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold text-center">
-          Welcome back
+          Welcome to BitLog
         </CardTitle>
         <CardDescription className="text-center">
-          Sign in to your account to continue
+          Sign in with your social account to continue
         </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Social Login Buttons */}
-        {showSocialLogin && (
-          <>
-            <div className="grid grid-cols-2 gap-4">
-              <Button
-                variant="outline"
-                onClick={() => handleSocialLogin('google')}
-                disabled={loading || isSubmitting}
-                className="w-full"
-              >
-                <Chrome className="mr-2 h-4 w-4" />
-                Google
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => handleSocialLogin('github')}
-                disabled={loading || isSubmitting}
-                className="w-full"
-              >
-                <Github className="mr-2 h-4 w-4" />
-                GitHub
-              </Button>
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <Separator className="w-full" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-          </>
+        {/* Error Alert */}
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
 
-        {/* Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Submit Error Alert */}
-          {submitError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{submitError}</AlertDescription>
-            </Alert>
-          )}
-
-          {/* Email Field */}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                disabled={loading || isSubmitting}
-                className={cn(
-                  "pl-10",
-                  errors.email && "border-destructive focus-visible:ring-destructive"
-                )}
-                aria-describedby={errors.email ? "email-error" : undefined}
-              />
-            </div>
-            {errors.email && (
-              <p id="email-error" className="text-sm text-destructive">
-                {errors.email}
-              </p>
-            )}
-          </div>
-
-          {/* Password Field */}
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Enter your password"
-                value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
-                disabled={loading || isSubmitting}
-                className={cn(
-                  "pl-10 pr-10",
-                  errors.password && "border-destructive focus-visible:ring-destructive"
-                )}
-                aria-describedby={errors.password ? "password-error" : undefined}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                onClick={() => setShowPassword(!showPassword)}
-                disabled={loading || isSubmitting}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <Eye className="h-4 w-4 text-muted-foreground" />
-                )}
-              </Button>
-            </div>
-            {errors.password && (
-              <p id="password-error" className="text-sm text-destructive">
-                {errors.password}
-              </p>
-            )}
-          </div>
-
-          {/* Remember Me and Forgot Password */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <input
-                id="remember-me"
-                type="checkbox"
-                checked={formData.rememberMe}
-                onChange={(e) => handleInputChange('rememberMe', e.target.checked)}
-                disabled={loading || isSubmitting}
-                className="rounded border-border"
-              />
-              <Label
-                htmlFor="remember-me"
-                className="text-sm font-normal cursor-pointer"
-              >
-                Remember me
-              </Label>
-            </div>
-            <Link
-              href="/auth/forgot-password"
-              className="text-sm text-primary hover:underline"
-            >
-              Forgot password?
-            </Link>
-          </div>
-
-          {/* Submit Button */}
+        {/* OAuth Login Buttons */}
+        <div className="space-y-3">
           <Button
-            type="submit"
-            className="w-full"
-            disabled={loading || isSubmitting}
+            variant="outline"
+            onClick={() => handleOAuthLogin('google')}
+            disabled={loading || isSubmitting === 'google'}
+            className="w-full h-12 text-base"
           >
-            {isSubmitting ? (
+            {isSubmitting === 'google' ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Signing in...
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Signing in with Google...
               </>
             ) : (
-              'Sign in'
+              <>
+                <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
+                  <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Continue with Google
+              </>
             )}
           </Button>
-        </form>
 
-        {/* Register Link */}
-        {showRegisterLink && (
-          <div className="text-center text-sm">
-            <span className="text-muted-foreground">Don't have an account? </span>
-            {onSwitchToRegister ? (
-              <button
-                onClick={onSwitchToRegister}
-                className="text-primary hover:underline font-medium"
-              >
-                Sign up
-              </button>
+          <Button
+            variant="outline"
+            onClick={() => handleOAuthLogin('github')}
+            disabled={loading || isSubmitting === 'github'}
+            className="w-full h-12 text-base"
+          >
+            {isSubmitting === 'github' ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Signing in with GitHub...
+              </>
             ) : (
-              <Link href="/auth/register" className="text-primary hover:underline font-medium">
-                Sign up
-              </Link>
+              <>
+                <Github className="mr-2 h-5 w-5" />
+                Continue with GitHub
+              </>
             )}
-          </div>
-        )}
+          </Button>
+        </div>
+
+        {/* Info Text */}
+        <div className="text-center text-sm text-muted-foreground">
+          <p>
+            By signing in, you agree to our Terms of Service and Privacy Policy.
+          </p>
+        </div>
       </CardContent>
     </Card>
   );

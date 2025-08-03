@@ -109,7 +109,10 @@ async function apiRequest<T = any>(
     clearTimeout(timeoutId);
 
     // Handle network errors and timeouts
-    if (error instanceof TypeError || error.name === 'AbortError') {
+    if (
+      error instanceof TypeError ||
+      (typeof error === 'object' && error !== null && 'name' in error && (error as any).name === 'AbortError')
+    ) {
       // Retry logic for network errors
       if (retryCount < API_CONFIG.retryAttempts) {
         console.warn(`API request failed, retrying... (${retryCount + 1}/${API_CONFIG.retryAttempts})`);
@@ -121,7 +124,7 @@ async function apiRequest<T = any>(
       }
 
       throw new ApiError(
-        error.name === 'AbortError' 
+        (typeof error === 'object' && error !== null && 'name' in error && (error as any).name === 'AbortError')
           ? 'Request timeout - please try again'
           : 'Network error - please check your connection',
         0,

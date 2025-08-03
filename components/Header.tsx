@@ -28,6 +28,7 @@ import {
   Search,
   User
 } from 'lucide-react';
+import { LoginButton } from '@/components/auth/LoginButton';
 
 /**
  * Props interface for the Header component
@@ -170,16 +171,7 @@ export default function Header({ className }: HeaderProps) {
               <Search className="h-4 w-4" />
             </Button>
 
-            {/* User profile placeholder */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-9 w-9 p-0"
-              title="User profile"
-              aria-label="User profile"
-            >
-              <User className="h-4 w-4" />
-            </Button>
+            <LoginButton />
           </div>
 
           {/* Mobile Menu Button */}
@@ -250,16 +242,7 @@ export default function Header({ className }: HeaderProps) {
                   <span className="text-xs">Search</span>
                 </Button>
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex flex-col items-center space-y-1 h-auto py-2"
-                  title="User profile"
-                  aria-label="User profile"
-                >
-                  <User className="h-5 w-5" />
-                  <span className="text-xs">Profile</span>
-                </Button>
+                <LoginButton />
               </div>
             </div>
           </div>

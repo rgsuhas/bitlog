@@ -2,273 +2,47 @@
  * Post Data Access Layer
  * 
  * This module handles all data operations related to blog posts.
- * Currently uses mock data for development, but is structured to easily
- * integrate with a real database or CMS in the future.
+ * Uses Supabase database with proper error handling and type safety.
  * 
  * All functions include proper error handling and return consistent
  * data structures for reliable integration with UI components.
  */
 
 import { Post, Author, PostStatus, PaginatedResponse, PaginationParams } from './types';
+import { createServerSupabase } from './supabase/server';
+import { dbUtils } from './supabase/utils';
+import type { DatabasePost, DatabaseProfile } from './supabase/types';
 
 /**
- * Mock authors for demonstration purposes
- * In production, this would come from a user management system
+ * Convert database post to application post format
  */
-const mockAuthors: Author[] = [
-  {
-    id: '1',
-    name: 'Sarah Chen',
-    email: 'sarah@example.com',
-    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-    initials: 'SC',
-    bio: 'Full-stack developer passionate about modern web technologies and user experience.',
-    website: 'https://sarahchen.dev'
-  },
-  {
-    id: '2',
-    name: 'Marcus Rodriguez',
-    email: 'marcus@example.com',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-    initials: 'MR',
-    bio: 'DevOps engineer and cloud architecture specialist with 8+ years of experience.',
-    website: 'https://marcusdev.io'
-  },
-  {
-    id: '3',
-    name: 'Emily Watson',
-    email: 'emily@example.com',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-    initials: 'EW',
-    bio: 'UI/UX designer turned frontend developer, focused on accessible and inclusive design.',
-    website: 'https://emilywatson.design'
-  }
-];
-
-/**
- * Mock blog posts for demonstration
- * In production, this would be fetched from a database or CMS
- * Each post includes comprehensive metadata for rich display and SEO
- */
-const mockPosts: Post[] = [
-  {
-    id: '1',
-    slug: 'building-modern-web-apps',
-    title: 'Building Modern Web Applications with Next.js 14',
-    excerpt: 'Explore the latest patterns and best practices for creating scalable, performant web applications using Next.js 14 and the app directory structure.',
-    content: `# Building Modern Web Applications with Next.js 14
-
-Next.js 14 introduces powerful new features that make building modern web applications more efficient and enjoyable than ever before.
-
-## Key Features
-
-### App Router
-The new App Router provides a more intuitive way to structure your application with improved performance and developer experience.
-
-### Server Components
-React Server Components allow you to render components on the server, reducing bundle size and improving initial page load times.
-
-### Streaming
-Built-in streaming support enables progressive page loading for better user experience.
-
-## Best Practices
-
-1. **Use TypeScript** - Strong typing prevents runtime errors and improves developer productivity
-2. **Implement proper error boundaries** - Graceful error handling improves user experience
-3. **Optimize images** - Use Next.js Image component for automatic optimization
-4. **Follow accessibility guidelines** - Ensure your app is usable by everyone
-
-## Conclusion
-
-Next.js 14 provides an excellent foundation for building production-ready web applications with modern best practices built-in.`,
-    author: mockAuthors[0],
-    publishedAt: '2024-01-15T10:00:00Z',
-    updatedAt: '2024-01-15T10:00:00Z',
-    status: 'published',
-    readTime: 8,
-    tags: ['Next.js', 'React', 'Web Development', 'TypeScript'],
-    featured: true,
-    coverImage: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&h=600&fit=crop',
-    metaDescription: 'Learn how to build modern, scalable web applications using Next.js 14 and the latest React features.',
-    viewCount: 1247
-  },
-  {
-    id: '2',
-    slug: 'typescript-advanced-patterns',
-    title: 'Advanced TypeScript Patterns for Better Code',
-    excerpt: 'Dive deep into advanced TypeScript patterns that will make your code more maintainable, type-safe, and elegant.',
-    content: `# Advanced TypeScript Patterns for Better Code
-
-TypeScript offers powerful features that go beyond basic type annotations. Let's explore advanced patterns that can significantly improve your code quality.
-
-## Utility Types
-
-TypeScript provides several built-in utility types that can help you create more flexible and reusable code.
-
-### Pick and Omit
-
-\`\`\`typescript
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  password: string;
+function mapDatabasePostToPost(dbPost: DatabasePost, author: DatabaseProfile): Post {
+  return {
+    id: dbPost.id,
+    slug: dbPost.slug,
+    title: dbPost.title,
+    excerpt: dbPost.excerpt || '',
+    content: dbPost.content,
+    author: {
+      id: author.id,
+      name: author.name,
+      email: author.email,
+      avatar: author.avatar_url || '',
+      initials: author.name.split(' ').map(n => n[0]).join('').toUpperCase(),
+      bio: author.bio || '',
+      website: author.website || ''
+    },
+         publishedAt: dbPost.published_at || dbPost.created_at || new Date().toISOString(),
+    updatedAt: dbPost.updated_at,
+    status: dbPost.status as PostStatus,
+    readTime: dbPost.read_time,
+    tags: dbPost.tags || [],
+    featured: dbPost.featured,
+    coverImage: dbPost.cover_image || undefined,
+    metaDescription: dbPost.meta_description || '',
+    viewCount: dbPost.view_count
+  };
 }
-
-// Create a type without sensitive information
-type PublicUser = Omit<User, 'password'>;
-
-// Create a type with only specific fields
-type UserCredentials = Pick<User, 'email' | 'password'>;
-\`\`\`
-
-## Conditional Types
-
-Conditional types allow you to create types that depend on other types.
-
-\`\`\`typescript
-type ApiResponse<T> = T extends string 
-  ? { message: T } 
-  : { data: T };
-\`\`\`
-
-## Mapped Types
-
-Create new types by transforming properties of existing types.
-
-\`\`\`typescript
-type Optional<T> = {
-  [P in keyof T]?: T[P];
-};
-\`\`\`
-
-These patterns help create more robust and maintainable TypeScript applications.`,
-    author: mockAuthors[1],
-    publishedAt: '2024-01-12T14:30:00Z',
-    updatedAt: '2024-01-12T14:30:00Z',
-    status: 'published',
-    readTime: 12,
-    tags: ['TypeScript', 'Programming', 'Best Practices'],
-    featured: true,
-    coverImage: 'https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=1200&h=600&fit=crop',
-    metaDescription: 'Master advanced TypeScript patterns including utility types, conditional types, and mapped types.',
-    viewCount: 892
-  },
-  {
-    id: '3',
-    slug: 'responsive-design-principles',
-    title: 'Responsive Design Principles for 2024',
-    excerpt: 'Learn the fundamental principles of responsive design and how to create websites that work beautifully on all devices.',
-    content: `# Responsive Design Principles for 2024
-
-Creating websites that work seamlessly across all devices is more important than ever. Here are the key principles to follow.
-
-## Mobile-First Approach
-
-Start designing for mobile devices and progressively enhance for larger screens.
-
-## Flexible Grid Systems
-
-Use CSS Grid and Flexbox to create layouts that adapt to different screen sizes.
-
-## Responsive Images
-
-Implement responsive images that load appropriately sized versions based on the device.
-
-## Touch-Friendly Interfaces
-
-Design interactive elements that work well with touch input on mobile devices.
-
-## Performance Considerations
-
-Optimize for performance across all devices, especially on slower mobile connections.`,
-    author: mockAuthors[2],
-    publishedAt: '2024-01-10T09:15:00Z',
-    updatedAt: '2024-01-10T09:15:00Z',
-    status: 'published',
-    readTime: 6,
-    tags: ['Design', 'CSS', 'Responsive', 'Mobile'],
-    featured: false,
-    coverImage: 'https://images.unsplash.com/photo-1559028006-448665bd7c7f?w=1200&h=600&fit=crop',
-    metaDescription: 'Essential responsive design principles for creating mobile-friendly websites in 2024.',
-    viewCount: 634
-  },
-  {
-    id: '4',
-    slug: 'getting-started-with-markdown',
-    title: 'Getting Started with Markdown for Technical Writing',
-    excerpt: 'A comprehensive guide to using Markdown for technical documentation, blog posts, and more.',
-    content: `# Getting Started with Markdown for Technical Writing
-
-Markdown is a lightweight markup language that's perfect for technical writing. Here's everything you need to know.
-
-## Basic Syntax
-
-### Headers
-Use \`#\` for headers. More \`#\` symbols create smaller headers.
-
-### Emphasis
-- *Italic text* with single asterisks
-- **Bold text** with double asterisks
-- ***Bold and italic*** with triple asterisks
-
-### Lists
-Create ordered and unordered lists easily:
-
-1. First item
-2. Second item
-3. Third item
-
-- Bullet point
-- Another bullet
-- One more
-
-### Code
-Inline \`code\` with backticks, or code blocks with triple backticks.
-
-### Links and Images
-[Link text](https://example.com)
-![Alt text](image-url.jpg)
-
-## Advanced Features
-
-### Tables
-| Column 1 | Column 2 | Column 3 |
-|----------|----------|----------|
-| Data 1   | Data 2   | Data 3   |
-
-### Blockquotes
-> This is a blockquote
-> It can span multiple lines
-
-## Best Practices
-
-1. Keep it simple and readable
-2. Use consistent formatting
-3. Preview your content before publishing
-4. Learn your editor's shortcuts
-
-Markdown makes technical writing efficient and enjoyable!`,
-    author: mockAuthors[0],
-    publishedAt: '2024-01-08T16:45:00Z',
-    updatedAt: '2024-01-08T16:45:00Z',
-    status: 'published',
-    readTime: 5,
-    tags: ['Markdown', 'Writing', 'Documentation'],
-    featured: false,
-    coverImage: 'https://images.unsplash.com/photo-1486312338219-ce68e2c6b696?w=1200&h=600&fit=crop',
-    metaDescription: 'Learn Markdown syntax and best practices for technical writing and documentation.',
-    viewCount: 445
-  }
-];
-
-/**
- * Simulates network delay for realistic development experience
- * In production, this would be replaced with actual API calls
- */
-const simulateNetworkDelay = (ms: number = 100): Promise<void> => {
-  return new Promise(resolve => setTimeout(resolve, ms));
-};
 
 /**
  * Retrieves all published blog posts
@@ -284,18 +58,30 @@ const simulateNetworkDelay = (ms: number = 100): Promise<void> => {
  */
 export async function getAllPosts(featured?: boolean): Promise<Post[]> {
   try {
-    await simulateNetworkDelay();
+    const supabase = createServerSupabase();
+    const dbPosts = await dbUtils.getAllPosts(supabase, featured);
     
-    let posts = mockPosts.filter(post => post.status === 'published');
+         // Fetch author profiles for all posts
+     const authorIds = Array.from(new Set(dbPosts.map(post => post.author_id)));
+    const authorProfiles = new Map<string, DatabaseProfile>();
     
-    if (featured !== undefined) {
-      posts = posts.filter(post => post.featured === featured);
+    for (const authorId of authorIds) {
+      const profile = await dbUtils.getUserProfile(supabase, authorId);
+      if (profile) {
+        authorProfiles.set(authorId, profile);
+      }
     }
     
-    // Sort by publication date (newest first)
-    return posts.sort((a, b) => 
-      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-    );
+    // Map database posts to application posts
+    const posts: Post[] = [];
+    for (const dbPost of dbPosts) {
+      const author = authorProfiles.get(dbPost.author_id);
+      if (author) {
+        posts.push(mapDatabasePostToPost(dbPost, author));
+      }
+    }
+    
+    return posts;
   } catch (error) {
     console.error('Error fetching posts:', error);
     throw new Error('Failed to fetch posts');
@@ -318,13 +104,21 @@ export async function getAllPosts(featured?: boolean): Promise<Post[]> {
  */
 export async function getPostBySlug(slug: string): Promise<Post | null> {
   try {
-    await simulateNetworkDelay();
+    const supabase = createServerSupabase();
+    const dbPost = await dbUtils.getPostBySlug(supabase, slug);
     
-    const post = mockPosts.find(post => 
-      post.slug === slug && post.status === 'published'
-    );
+    if (!dbPost) {
+      return null;
+    }
     
-    return post || null;
+    // Fetch author profile
+    const author = await dbUtils.getUserProfile(supabase, dbPost.author_id);
+    if (!author) {
+      console.error(`Author not found for post: ${slug}`);
+      return null;
+    }
+    
+    return mapDatabasePostToPost(dbPost, author);
   } catch (error) {
     console.error(`Error fetching post with slug "${slug}":`, error);
     throw new Error(`Failed to fetch post: ${slug}`);
@@ -348,49 +142,42 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
  */
 export async function getPaginatedPosts(params: PaginationParams): Promise<PaginatedResponse<Post>> {
   try {
-    await simulateNetworkDelay();
-    
-    let filteredPosts = mockPosts.filter(post => post.status === 'published');
-    
-    // Apply search filter
-    if (params.search) {
-      const searchLower = params.search.toLowerCase();
-      filteredPosts = filteredPosts.filter(post =>
-        post.title.toLowerCase().includes(searchLower) ||
-        post.excerpt.toLowerCase().includes(searchLower) ||
-        post.tags.some(tag => tag.toLowerCase().includes(searchLower))
-      );
-    }
-    
-    // Apply tag filter
-    if (params.tag) {
-      filteredPosts = filteredPosts.filter(post =>
-        post.tags.some(tag => tag.toLowerCase() === params.tag?.toLowerCase())
-      );
-    }
-    
-    // Apply status filter
-    if (params.status) {
-      filteredPosts = filteredPosts.filter(post => post.status === params.status);
-    }
-    
-    // Sort by publication date (newest first)
-    filteredPosts.sort((a, b) => 
-      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-    );
-    
-    // Calculate pagination
-    const total = filteredPosts.length;
-    const totalPages = Math.ceil(total / params.limit);
-    const startIndex = (params.page - 1) * params.limit;
-    const endIndex = startIndex + params.limit;
-    const items = filteredPosts.slice(startIndex, endIndex);
-    
-    return {
-      items,
+    const supabase = createServerSupabase();
+    const result = await dbUtils.getPaginatedPosts(supabase, {
       page: params.page,
       limit: params.limit,
-      total,
+      search: params.search,
+      tag: params.tag,
+      status: params.status
+    });
+    
+         // Fetch author profiles for all posts
+     const authorIds = Array.from(new Set(result.posts.map(post => post.author_id)));
+    const authorProfiles = new Map<string, DatabaseProfile>();
+    
+    for (const authorId of authorIds) {
+      const profile = await dbUtils.getUserProfile(supabase, authorId);
+      if (profile) {
+        authorProfiles.set(authorId, profile);
+      }
+    }
+    
+    // Map database posts to application posts
+    const posts: Post[] = [];
+    for (const dbPost of result.posts) {
+      const author = authorProfiles.get(dbPost.author_id);
+      if (author) {
+        posts.push(mapDatabasePostToPost(dbPost, author));
+      }
+    }
+    
+    const totalPages = Math.ceil(result.total / params.limit);
+    
+    return {
+      items: posts,
+      page: params.page,
+      limit: params.limit,
+      total: result.total,
       totalPages,
       hasNext: params.page < totalPages,
       hasPrev: params.page > 1
@@ -415,10 +202,10 @@ export async function getPaginatedPosts(params: PaginationParams): Promise<Pagin
  */
 export async function getAllTags(): Promise<string[]> {
   try {
-    await simulateNetworkDelay();
+    const supabase = createServerSupabase();
+    const posts = await dbUtils.getAllPosts(supabase);
     
-    const publishedPosts = mockPosts.filter(post => post.status === 'published');
-    const allTags = publishedPosts.flatMap(post => post.tags);
+    const allTags = posts.flatMap(post => post.tags || []);
     const uniqueTags = Array.from(new Set(allTags));
     
     // Sort tags alphabetically
@@ -442,18 +229,150 @@ export async function getAllTags(): Promise<string[]> {
  */
 export async function getPostsByAuthor(authorId: string): Promise<Post[]> {
   try {
-    await simulateNetworkDelay();
+    const supabase = createServerSupabase();
     
-    const posts = mockPosts.filter(post => 
-      post.author.id === authorId && post.status === 'published'
-    );
+    // Get all posts and filter by author
+    const allPosts = await dbUtils.getAllPosts(supabase);
+    const authorPosts = allPosts.filter(post => post.author_id === authorId);
     
-    // Sort by publication date (newest first)
-    return posts.sort((a, b) => 
-      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-    );
+    // Fetch author profile
+    const author = await dbUtils.getUserProfile(supabase, authorId);
+    if (!author) {
+      console.error(`Author not found: ${authorId}`);
+      return [];
+    }
+    
+    // Map database posts to application posts
+    return authorPosts.map(dbPost => mapDatabasePostToPost(dbPost, author));
   } catch (error) {
     console.error(`Error fetching posts by author "${authorId}":`, error);
     throw new Error(`Failed to fetch posts by author: ${authorId}`);
+  }
+}
+
+/**
+ * Creates a new blog post
+ * 
+ * @param postData - Post data to create
+ * @returns Promise resolving to the created post
+ */
+export async function createPost(postData: {
+  title: string;
+  content: string;
+  excerpt?: string;
+  authorId: string;
+  tags?: string[];
+  status?: PostStatus;
+  featured?: boolean;
+  coverImage?: string;
+  metaDescription?: string;
+}): Promise<Post> {
+  try {
+    const supabase = createServerSupabase();
+    
+    const dbPost = await dbUtils.createPost(supabase, {
+      title: postData.title,
+      content: postData.content,
+      excerpt: postData.excerpt || '',
+      author_id: postData.authorId,
+      tags: postData.tags || [],
+      status: postData.status || 'draft',
+      featured: postData.featured || false,
+      cover_image: postData.coverImage,
+      meta_description: postData.metaDescription,
+      read_time: Math.ceil(postData.content.split(' ').length / 200), // Rough estimate
+      slug: postData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+      published_at: postData.status === 'published' ? new Date().toISOString() : null
+    });
+    
+    if (!dbPost) {
+      throw new Error('Failed to create post');
+    }
+    
+    // Fetch author profile
+    const author = await dbUtils.getUserProfile(supabase, postData.authorId);
+    if (!author) {
+      throw new Error('Author not found');
+    }
+    
+    return mapDatabasePostToPost(dbPost, author);
+  } catch (error) {
+    console.error('Error creating post:', error);
+    throw new Error('Failed to create post');
+  }
+}
+
+/**
+ * Updates an existing blog post
+ * 
+ * @param postId - ID of the post to update
+ * @param updates - Post data to update
+ * @returns Promise resolving to the updated post
+ */
+export async function updatePost(postId: string, updates: Partial<{
+  title: string;
+  content: string;
+  excerpt: string;
+  tags: string[];
+  status: PostStatus;
+  featured: boolean;
+  coverImage: string;
+  metaDescription: string;
+}>): Promise<Post> {
+  try {
+    const supabase = createServerSupabase();
+    
+    const updateData: any = {};
+    if (updates.title !== undefined) updateData.title = updates.title;
+    if (updates.content !== undefined) updateData.content = updates.content;
+    if (updates.excerpt !== undefined) updateData.excerpt = updates.excerpt;
+    if (updates.tags !== undefined) updateData.tags = updates.tags;
+    if (updates.status !== undefined) updateData.status = updates.status;
+    if (updates.featured !== undefined) updateData.featured = updates.featured;
+    if (updates.coverImage !== undefined) updateData.cover_image = updates.coverImage;
+    if (updates.metaDescription !== undefined) updateData.meta_description = updates.metaDescription;
+    
+    // Update read time if content changed
+    if (updates.content !== undefined) {
+      updateData.read_time = Math.ceil(updates.content.split(' ').length / 200);
+    }
+    
+    // Update published_at if status changed to published
+    if (updates.status === 'published') {
+      updateData.published_at = new Date().toISOString();
+    }
+    
+    const dbPost = await dbUtils.updatePost(supabase, postId, updateData);
+    
+    if (!dbPost) {
+      throw new Error('Failed to update post');
+    }
+    
+    // Fetch author profile
+    const author = await dbUtils.getUserProfile(supabase, dbPost.author_id);
+    if (!author) {
+      throw new Error('Author not found');
+    }
+    
+    return mapDatabasePostToPost(dbPost, author);
+  } catch (error) {
+    console.error('Error updating post:', error);
+    throw new Error('Failed to update post');
+  }
+}
+
+/**
+ * Deletes a blog post
+ * 
+ * @param postId - ID of the post to delete
+ * @returns Promise resolving to success status
+ */
+export async function deletePost(postId: string): Promise<boolean> {
+  try {
+    const supabase = createServerSupabase();
+    return await dbUtils.deletePost(supabase, postId);
+  } catch (error) {
+    console.error('Error deleting post:', error);
+    throw new Error('Failed to delete post');
   }
 }

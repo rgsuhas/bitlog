@@ -20,6 +20,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { createClientSupabase } from '@/lib/supabase/client';
 import { authService, type ExtendedUser, type AuthResult } from '@/lib/auth';
+import { UserProfile, getUserProfile, canEdit, Role } from '@/lib/roles';
 
 /**
  * Authentication context interface defining available methods and state
@@ -27,12 +28,13 @@ import { authService, type ExtendedUser, type AuthResult } from '@/lib/auth';
 interface AuthContextType {
   // Authentication state
   user: ExtendedUser | null;
+  profile: UserProfile | null;
   session: Session | null;
   loading: boolean;
   
   // Authentication methods
   signUp: (email: string, password: string, name: string) => Promise<AuthResult>;
-  signIn: (email: string, password: string) => Promise<AuthResult>;
+  signInWithOAuth: (provider: 'google' | 'github') => Promise<AuthResult>;
   signOut: () => Promise<AuthResult>;
   resetPassword: (email: string) => Promise<AuthResult>;
   updateProfile: (data: any) => Promise<AuthResult>;
@@ -40,6 +42,7 @@ interface AuthContextType {
   // Utility methods
   refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
+  canEdit: boolean;
 }
 
 /**
@@ -48,15 +51,17 @@ interface AuthContextType {
  */
 const AuthContext = createContext<AuthContextType>({
   user: null,
+  profile: null,
   session: null,
   loading: true,
   signUp: async () => ({ success: false, error: 'Auth context not initialized' }),
-  signIn: async () => ({ success: false, error: 'Auth context not initialized' }),
+  signInWithOAuth: async () => ({ success: false, error: 'Auth context not initialized' }),
   signOut: async () => ({ success: false, error: 'Auth context not initialized' }),
   resetPassword: async () => ({ success: false, error: 'Auth context not initialized' }),
   updateProfile: async () => ({ success: false, error: 'Auth context not initialized' }),
   refreshUser: async () => {},
   isAuthenticated: false,
+  canEdit: false,
 });
 
 /**
@@ -104,6 +109,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   // Authentication state
   const [user, setUser] = useState<ExtendedUser | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   
@@ -125,6 +131,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Get current session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
+        console.log('Initial session check:', { 
+          hasSession: !!session, 
+          userId: session?.user?.id,
+          error: sessionError?.message 
+        });
+        
         if (sessionError) {
           console.error('Error getting initial session:', sessionError);
           if (mounted) {
@@ -139,10 +151,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         // Get user data if session exists
         if (session?.user) {
+          console.log('User found in session, fetching user data...');
           const userData = await authService.getCurrentUser();
+          console.log('User data fetched:', { hasUser: !!userData, userId: userData?.id });
           if (mounted) {
             setUser(userData);
+            if (userData) {
+              const userProfile = await getUserProfile(userData);
+              console.log('User profile fetched:', { hasProfile: !!userProfile, role: userProfile?.role });
+              setProfile(userProfile);
+            }
           }
+        } else {
+          console.log('No user in session');
         }
       } catch (error) {
         console.error('Error initializing auth state:', error);
@@ -160,28 +181,42 @@ export function AuthProvider({ children }: AuthProviderProps) {
      * @param session - Current session data
      */
     const handleAuthChange = async (event: AuthChangeEvent, session: Session | null) => {
-      console.log('Auth state changed:', event, session?.user?.email);
-
-      if (!mounted) return;
-
+      console.log(`[AUTH_PROVIDER] Auth state change:`, { event, hasSession: !!session, userId: session?.user?.id });
+      
       setSession(session);
-      setLoading(true);
+      setUser(session?.user || null);
 
-      try {
-        if (session?.user) {
-          // User signed in - fetch full user data
-          const userData = await authService.getCurrentUser();
-          setUser(userData);
-        } else {
-          // User signed out - clear user data
-          setUser(null);
+      if (event === 'SIGNED_IN' && session?.user) {
+        console.log(`[AUTH_PROVIDER] User signed in:`, { userId: session.user.id, email: session.user.email });
+        
+        try {
+          // Create or update user profile for OAuth users
+          const profileResult = await authService.createOrUpdateOAuthProfile(session.user);
+          
+          console.log(`[AUTH_PROVIDER] Profile creation result:`, { 
+            success: profileResult.success, 
+            error: profileResult.error,
+            hasProfile: !!profileResult.data 
+          });
+
+          if (profileResult.success && profileResult.data) {
+            setProfile({
+              user: session.user,
+              ...profileResult.data
+            });
+            console.log(`[AUTH_PROVIDER] Profile set successfully`);
+          } else {
+            console.error(`[AUTH_PROVIDER] Failed to create/update profile:`, profileResult.error);
+          }
+        } catch (error) {
+          console.error(`[AUTH_PROVIDER] Error creating/updating profile:`, error);
         }
-      } catch (error) {
-        console.error('Error handling auth change:', error);
-        setUser(null);
-      } finally {
-        setLoading(false);
+      } else if (event === 'SIGNED_OUT') {
+        console.log(`[AUTH_PROVIDER] User signed out`);
+        setProfile(null);
       }
+
+      setLoading(false);
     };
 
     // Initialize authentication state
@@ -235,21 +270,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * @param password - User's password
    * @returns Authentication result with success status and any errors
    */
-  const signIn = async (email: string, password: string): Promise<AuthResult> => {
+  const signInWithOAuth = async (provider: 'google' | 'github'): Promise<AuthResult> => {
     try {
       setLoading(true);
       
-      const result = await authService.login({
-        email,
-        password,
-      });
+      const result = await authService.loginWithOAuth(provider);
 
       return result;
     } catch (error) {
-      console.error('Error in signIn:', error);
+      console.error('Error in signInWithOAuth:', error);
       return {
         success: false,
-        error: 'An unexpected error occurred during sign in',
+        error: 'An unexpected error occurred during OAuth sign in',
         details: error,
       };
     } finally {
@@ -272,6 +304,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (result.success) {
         setUser(null);
         setSession(null);
+        setProfile(null);
       }
 
       return result;
@@ -358,6 +391,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(true);
       const userData = await authService.getCurrentUser();
       setUser(userData);
+      if (userData) {
+        const userProfile = await getUserProfile(userData);
+        setProfile(userProfile);
+      }
     } catch (error) {
       console.error('Error refreshing user:', error);
     } finally {
@@ -371,13 +408,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const contextValue: AuthContextType = {
     // State
     user,
-    session,
+    profile,
+        session,
     loading,
     isAuthenticated: !!user,
+    canEdit: canEdit(profile),
     
     // Methods
     signUp,
-    signIn,
+    signInWithOAuth,
     signOut,
     resetPassword,
     updateProfile,
@@ -471,6 +510,53 @@ export function withAuth<P extends object>(WrappedComponent: React.ComponentType
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-4">Authentication Required</h2>
             <p className="text-muted-foreground">Please sign in to access this page.</p>
+          </div>
+        </div>
+      );
+    }
+
+    return <WrappedComponent {...props} />;
+  };
+}
+
+/**
+ * Higher-order component for protecting routes based on user role
+ * 
+ * @param WrappedComponent - Component to protect with authentication
+ * @param allowedRoles - Array of roles that are allowed to access the component
+ * @returns Protected component that redirects users without the required role
+ * 
+ * @example
+ * ```tsx
+ * const AdminDashboard = withRole(Dashboard, ['admin']);
+ * 
+ * function App() {
+ *   return (
+ *     <AuthProvider>
+ *       <AdminDashboard />
+ *     </AuthProvider>
+ *   );
+ * }
+ * ```
+ */
+export function withRole<P extends object>(WrappedComponent: React.ComponentType<P>, allowedRoles: Role[]) {
+  return function RoleAuthenticatedComponent(props: P) {
+    const { profile, loading } = useAuth();
+
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      );
+    }
+
+    if (!profile || !allowedRoles.includes(profile.role)) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
+            <p className="text-muted-foreground">You do not have permission to access this page.</p>
           </div>
         </div>
       );

@@ -116,7 +116,7 @@ function validateFile(file: File): { valid: boolean; error?: string } {
     ...UPLOAD_CONFIG.allowedTypes.archives
   ];
 
-  if (!allAllowedTypes.includes(file.type)) {
+  if (!allAllowedTypes.includes(file.type as typeof allAllowedTypes[number])) {
     return {
       valid: false,
       error: `File type '${file.type}' is not allowed`
@@ -125,7 +125,7 @@ function validateFile(file: File): { valid: boolean; error?: string } {
 
   // Check file extension
   const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-  if (!UPLOAD_CONFIG.allowedExtensions.includes(fileExtension)) {
+  if (!UPLOAD_CONFIG.allowedExtensions.includes(fileExtension as typeof UPLOAD_CONFIG.allowedExtensions[number])) {
     return {
       valid: false,
       error: `File extension '${fileExtension}' is not allowed`
@@ -204,7 +204,7 @@ async function uploadToCloudStorage(file: File, filename: string): Promise<Uploa
   
   // Generate thumbnail URL for images
   let thumbnailUrl: string | undefined;
-  if (UPLOAD_CONFIG.allowedTypes.images.includes(file.type)) {
+  if (UPLOAD_CONFIG.allowedTypes.images.includes(file.type as typeof UPLOAD_CONFIG.allowedTypes.images[number])) {
     thumbnailUrl = `${baseUrl}/uploads/thumbnails/${filename}`;
   }
 

@@ -383,7 +383,7 @@ function CommentForm({
 
           <div className="flex items-start space-x-3">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={user.profile?.avatar_url} alt={user.profile?.name} />
+              <AvatarImage src={user.profile?.avatar_url || undefined} alt={user.profile?.name || undefined} />
               <AvatarFallback>
                 <User className="h-4 w-4" />
               </AvatarFallback>

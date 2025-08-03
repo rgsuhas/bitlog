@@ -192,7 +192,7 @@ async function processSyntaxHighlighting(
   return {
     html: processedHtml,
     info: {
-      languages: [...new Set(languages)],
+      languages: Array.from(new Set(languages)),
       totalBlocks,
     },
   };
@@ -407,7 +407,7 @@ async function processCustomComponents(
   return {
     html: processedHtml,
     info: {
-      components: [...new Set(components)],
+      components: Array.from(new Set(components)),
       totalComponents,
     },
   };
@@ -675,4 +675,4 @@ export function validateMathEquation(equation: string): { valid: boolean; errors
 /**
  * Export types for use throughout the application
  */
-export type { AdvancedMarkdownOptions, AdvancedMarkdownResult };
+// Types are already exported above as interfaces.

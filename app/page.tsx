@@ -5,7 +5,7 @@
  * recent articles, and provides an engaging introduction to the platform.
  * 
  * This page demonstrates production-grade practices:
- * - Server-side data fetching with proper error handling
+ * - Client-side data fetching with proper error handling
  * - Responsive design with mobile-first approach
  * - Semantic HTML structure for accessibility and SEO
  * - Performance optimizations with Next.js Image component
@@ -19,15 +19,17 @@
  * - Loading states and error boundaries
  */
 
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
-import { Suspense } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { getAllPosts } from '@/lib/posts';
+import { getAllPosts } from '@/lib/posts-client';
 import { Post } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { 
@@ -39,7 +41,8 @@ import {
   Users,
   Globe,
   Sparkles,
-  TrendingUp
+  TrendingUp,
+  Loader2
 } from 'lucide-react';
 
 /**
@@ -100,16 +103,16 @@ function HeroSection() {
           {/* Stats */}
           <div className="mt-16 grid grid-cols-1 gap-8 sm:grid-cols-3">
             <div className="text-center">
-              <div className="mb-2 text-3xl font-bold text-foreground">10K+</div>
-              <div className="text-sm text-muted-foreground">Posts Published</div>
+              <div className="mb-2 text-3xl font-bold text-primary">100%</div>
+              <div className="text-sm text-muted-foreground">Markdown Support</div>
             </div>
             <div className="text-center">
-              <div className="mb-2 text-3xl font-bold text-foreground">5K+</div>
-              <div className="text-sm text-muted-foreground">Active Writers</div>
+              <div className="mb-2 text-3xl font-bold text-primary">∞</div>
+              <div className="text-sm text-muted-foreground">Scalable</div>
             </div>
             <div className="text-center">
-              <div className="mb-2 text-3xl font-bold text-foreground">50K+</div>
-              <div className="text-sm text-muted-foreground">Monthly Readers</div>
+              <div className="mb-2 text-3xl font-bold text-primary">⚡</div>
+              <div className="text-sm text-muted-foreground">Lightning Fast</div>
             </div>
           </div>
         </div>
@@ -121,8 +124,8 @@ function HeroSection() {
 /**
  * Post Card Component
  * 
- * Reusable card component for displaying blog post previews.
- * Includes all essential post metadata and engaging hover effects.
+ * Displays a single blog post with metadata and preview.
+ * Handles both featured and regular post layouts.
  */
 interface PostCardProps {
   post: Post;
@@ -130,31 +133,23 @@ interface PostCardProps {
 }
 
 function PostCard({ post, featured = false }: PostCardProps) {
-  const publishedDate = new Date(post.publishedAt).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-
   return (
     <Card className={cn(
       "group relative overflow-hidden transition-all duration-300 hover:shadow-lg",
-      featured && "md:col-span-2 lg:col-span-1"
+      featured && "border-primary/20 bg-gradient-to-br from-primary/5 to-transparent"
     )}>
       {/* Cover Image */}
       {post.coverImage && (
-        <div className="relative aspect-video overflow-hidden">
+        <div className="relative h-48 overflow-hidden">
           <Image
             src={post.coverImage}
             alt={post.title}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
           {featured && (
-            <div className="absolute left-4 top-4">
-              <Badge className="bg-primary/90 text-primary-foreground">
-                <TrendingUp className="mr-1 h-3 w-3" />
+            <div className="absolute top-4 left-4">
+              <Badge variant="secondary" className="bg-primary text-primary-foreground">
                 Featured
               </Badge>
             </div>
@@ -162,54 +157,44 @@ function PostCard({ post, featured = false }: PostCardProps) {
         </div>
       )}
 
-      <CardHeader className="pb-3">
+      <CardContent className="p-6">
         {/* Tags */}
-        <div className="mb-3 flex flex-wrap gap-2">
-          {post.tags.slice(0, 3).map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-xs">
-              {tag}
-            </Badge>
-          ))}
-        </div>
+        {post.tags.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-1">
+            {post.tags.slice(0, 3).map((tag) => (
+              <Badge key={tag} variant="outline" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        )}
 
         {/* Title */}
-        <CardTitle className="line-clamp-2 text-xl leading-tight group-hover:text-primary transition-colors">
-          <Link href={`/blog/${post.slug}`} className="after:absolute after:inset-0">
+        <CardTitle className="mb-2 line-clamp-2 text-lg font-semibold group-hover:text-primary transition-colors">
+          <Link href={`/blog/${post.slug}`} className="hover:underline">
             {post.title}
           </Link>
         </CardTitle>
 
         {/* Excerpt */}
-        <CardDescription className="line-clamp-3 text-sm leading-relaxed">
+        <CardDescription className="mb-4 line-clamp-3 text-sm">
           {post.excerpt}
         </CardDescription>
-      </CardHeader>
 
-      <CardContent className="pt-0">
-        {/* Author and Meta */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={post.author.avatar} alt={post.author.name} />
-              <AvatarFallback className="text-xs">
-                {post.author.initials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-foreground truncate">
-                {post.author.name}
-              </p>
-              <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                <CalendarDays className="h-3 w-3" />
-                <span>{publishedDate}</span>
-              </div>
+        {/* Meta Information */}
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1">
+              <CalendarDays className="h-3 w-3" />
+              {new Date(post.publishedAt).toLocaleDateString()}
+            </div>
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {post.readTime} min read
             </div>
           </div>
-
-          <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            <span>{post.readTime} min</span>
-          </div>
+          
+          <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />
         </div>
       </CardContent>
     </Card>
@@ -219,184 +204,190 @@ function PostCard({ post, featured = false }: PostCardProps) {
 /**
  * Featured Posts Section Component
  * 
- * Displays a curated selection of featured blog posts
- * with enhanced styling and prominence.
+ * Displays featured blog posts in a grid layout.
+ * Uses client-side data fetching with loading states.
  */
-async function FeaturedPostsSection() {
-  try {
-    const featuredPosts = await getAllPosts(true);
+function FeaturedPostsSection() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    if (featuredPosts.length === 0) {
-      return null;
+  useEffect(() => {
+    async function loadPosts() {
+      try {
+        const allPosts = await getAllPosts(true);
+        setPosts(allPosts.slice(0, 3));
+      } catch (err) {
+        console.error('Error loading featured posts:', err);
+        setError('Failed to load featured posts');
+      } finally {
+        setLoading(false);
+      }
     }
 
-    return (
-      <section className="py-16 sm:py-24">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Section Header */}
-          <div className="mb-12 text-center">
-            <div className="mb-4 inline-flex items-center rounded-full border border-border/40 bg-background/60 px-3 py-1 text-sm backdrop-blur-sm">
-              <Zap className="mr-2 h-4 w-4 text-primary" />
-              <span className="text-muted-foreground">Featured Content</span>
-            </div>
-            <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-              Editor's Picks
-            </h2>
-            <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-              Discover our most popular and insightful articles, carefully selected by our editorial team.
-            </p>
-          </div>
+    loadPosts();
+  }, []);
 
-          {/* Featured Posts Grid */}
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {featuredPosts.slice(0, 3).map((post) => (
-              <PostCard key={post.id} post={post} featured />
-            ))}
-          </div>
-        </div>
-      </section>
-    );
-  } catch (error) {
-    console.error('Error loading featured posts:', error);
+  if (loading) {
     return (
-      <section className="py-16 sm:py-24">
+      <section className="py-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <p className="text-muted-foreground">Unable to load featured posts at this time.</p>
+          <div className="mb-12 text-center">
+            <h2 className="text-3xl font-bold">Featured Posts</h2>
+            <p className="mt-2 text-muted-foreground">Discover our most popular articles</p>
+          </div>
+          <div className="flex justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         </div>
       </section>
     );
   }
+
+  if (error) {
+    return (
+      <section className="py-16">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-12 text-center">
+            <h2 className="text-3xl font-bold">Featured Posts</h2>
+            <p className="mt-2 text-muted-foreground">Discover our most popular articles</p>
+          </div>
+          <div className="text-center text-muted-foreground">
+            <p>{error}</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="py-16">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-12 text-center">
+          <h2 className="text-3xl font-bold">Featured Posts</h2>
+          <p className="mt-2 text-muted-foreground">Discover our most popular articles</p>
+        </div>
+        
+        {posts.length > 0 ? (
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {posts.map((post) => (
+              <PostCard key={post.id} post={post} featured={true} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center text-muted-foreground">
+            <p>No featured posts available yet.</p>
+          </div>
+        )}
+      </div>
+    </section>
+  );
 }
 
 /**
  * Recent Posts Section Component
  * 
- * Displays the most recent blog posts in a clean grid layout.
+ * Displays recent blog posts in a grid layout.
+ * Uses client-side data fetching with loading states.
  */
-async function RecentPostsSection() {
-  try {
-    const allPosts = await getAllPosts();
-    const recentPosts = allPosts.slice(0, 6);
+function RecentPostsSection() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    if (recentPosts.length === 0) {
-      return (
-        <section className="py-16 sm:py-24 bg-muted/20">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground">
-                No Posts Yet
-              </h2>
-              <p className="mb-8 text-lg text-muted-foreground">
-                Be the first to share your thoughts and ideas!
-              </p>
-              <Button asChild>
-                <Link href="/editor/new">
-                  <Edit3 className="mr-2 h-4 w-4" />
-                  Write Your First Post
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </section>
-      );
+  useEffect(() => {
+    async function loadPosts() {
+      try {
+        const allPosts = await getAllPosts();
+        setPosts(allPosts.slice(0, 6));
+      } catch (err) {
+        console.error('Error loading recent posts:', err);
+        setError('Failed to load recent posts');
+      } finally {
+        setLoading(false);
+      }
     }
 
-    return (
-      <section className="py-16 sm:py-24 bg-muted/20">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Section Header */}
-          <div className="mb-12 flex items-center justify-between">
-            <div>
-              <h2 className="mb-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-                Latest Posts
-              </h2>
-              <p className="text-lg text-muted-foreground">
-                Fresh insights and ideas from our community of writers.
-              </p>
-            </div>
-            <Button variant="outline" asChild className="hidden sm:inline-flex">
-              <Link href="/blog">
-                View All Posts
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
+    loadPosts();
+  }, []);
 
-          {/* Recent Posts Grid */}
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {recentPosts.map((post) => (
-              <PostCard key={post.id} post={post} />
-            ))}
-          </div>
-
-          {/* Mobile View All Button */}
-          <div className="mt-12 text-center sm:hidden">
-            <Button variant="outline" asChild>
-              <Link href="/blog">
-                View All Posts
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-    );
-  } catch (error) {
-    console.error('Error loading recent posts:', error);
+  if (loading) {
     return (
-      <section className="py-16 sm:py-24 bg-muted/20">
+      <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <p className="text-muted-foreground">Unable to load recent posts at this time.</p>
+          <div className="mb-12 text-center">
+            <h2 className="text-3xl font-bold">Recent Posts</h2>
+            <p className="mt-2 text-muted-foreground">Latest articles from our writers</p>
+          </div>
+          <div className="flex justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         </div>
       </section>
     );
   }
+
+  if (error) {
+    return (
+      <section className="py-16 bg-muted/30">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-12 text-center">
+            <h2 className="text-3xl font-bold">Recent Posts</h2>
+            <p className="mt-2 text-muted-foreground">Latest articles from our writers</p>
+          </div>
+          <div className="text-center text-muted-foreground">
+            <p>{error}</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="py-16 bg-muted/30">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-12 text-center">
+          <h2 className="text-3xl font-bold">Recent Posts</h2>
+          <p className="mt-2 text-muted-foreground">Latest articles from our writers</p>
+        </div>
+        
+        {posts.length > 0 ? (
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {posts.map((post) => (
+              <PostCard key={post.id} post={post} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center text-muted-foreground">
+            <p>No posts available yet.</p>
+          </div>
+        )}
+      </div>
+    </section>
+  );
 }
 
 /**
  * Newsletter Section Component
  * 
- * Encourages user engagement with newsletter signup.
- * Currently a placeholder for future implementation.
+ * Placeholder for newsletter signup functionality.
+ * Can be extended with actual newsletter integration.
  */
 function NewsletterSection() {
   return (
-    <section className="py-16 sm:py-24">
+    <section className="py-16">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <div className="mb-8 inline-flex items-center rounded-full border border-border/40 bg-background/60 px-3 py-1 text-sm backdrop-blur-sm">
-            <Users className="mr-2 h-4 w-4 text-primary" />
-            <span className="text-muted-foreground">Join our community</span>
-          </div>
-          
-          <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Stay in the Loop
-          </h2>
-          
-          <p className="mb-8 text-lg text-muted-foreground">
-            Get the latest posts and updates delivered directly to your inbox. 
-            No spam, just quality content.
+          <h2 className="text-3xl font-bold">Stay Updated</h2>
+          <p className="mt-4 text-muted-foreground">
+            Get notified when we publish new articles and updates.
           </p>
-
-          {/* Newsletter Form Placeholder */}
-          <div className="mx-auto max-w-md">
-            <div className="flex gap-2">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              />
-              <Button type="submit">
-                Subscribe
-              </Button>
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              We respect your privacy. Unsubscribe at any time.
-            </p>
+          
+          <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:justify-center">
+            <Button size="lg" className="min-w-[200px]">
+              <Zap className="mr-2 h-5 w-5" />
+              Subscribe to Newsletter
+            </Button>
           </div>
         </div>
       </div>
@@ -407,53 +398,16 @@ function NewsletterSection() {
 /**
  * Home Page Component
  * 
- * Main page component that orchestrates all sections.
- * Uses Suspense for optimal loading experience.
+ * Main landing page that combines all sections.
+ * Uses client-side rendering for data fetching.
  */
 export default function HomePage() {
   return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
+    <main className="min-h-screen">
       <HeroSection />
-
-      {/* Featured Posts */}
-      <Suspense fallback={
-        <section className="py-16 sm:py-24">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <div className="animate-pulse">
-                <div className="mb-4 h-8 w-48 bg-muted rounded mx-auto" />
-                <div className="h-4 w-96 bg-muted rounded mx-auto" />
-              </div>
-            </div>
-          </div>
-        </section>
-      }>
-        <FeaturedPostsSection />
-      </Suspense>
-
-      <Separator />
-
-      {/* Recent Posts */}
-      <Suspense fallback={
-        <section className="py-16 sm:py-24 bg-muted/20">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <div className="animate-pulse">
-                <div className="mb-4 h-8 w-48 bg-muted rounded mx-auto" />
-                <div className="h-4 w-96 bg-muted rounded mx-auto" />
-              </div>
-            </div>
-          </div>
-        </section>
-      }>
-        <RecentPostsSection />
-      </Suspense>
-
-      <Separator />
-
-      {/* Newsletter Section */}
+      <FeaturedPostsSection />
+      <RecentPostsSection />
       <NewsletterSection />
-    </div>
+    </main>
   );
 }

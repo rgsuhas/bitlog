@@ -135,6 +135,22 @@ export interface PaginatedResponse<T> {
   hasPrev: boolean;
 }
 
+export interface Comment {
+  id: string;
+  post_id: string;
+  author_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  is_deleted: boolean;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
 
 // types/index.ts
 export interface PageParams {

@@ -65,6 +65,7 @@ export interface Database {
           avatar_url: string | null;
           bio: string | null;
           website: string | null;
+          role: 'admin' | 'editor' | 'author' | 'reader';
           created_at: string;
           updated_at: string;
         };
@@ -75,6 +76,7 @@ export interface Database {
           avatar_url?: string | null;
           bio?: string | null;
           website?: string | null;
+          role?: 'admin' | 'editor' | 'author' | 'reader';
           created_at?: string;
           updated_at?: string;
         };
@@ -85,6 +87,7 @@ export interface Database {
           avatar_url?: string | null;
           bio?: string | null;
           website?: string | null;
+          role?: 'admin' | 'editor' | 'author' | 'reader';
           created_at?: string;
           updated_at?: string;
         };

@@ -15,6 +15,10 @@
  * - Accessibility optimizations
  */
 
+
+import CommentSystem from '@/components/comments/CommentSystem';
+import SocialShare from '@/components/blog/SocialShare';
+
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -43,6 +47,9 @@ import {
   Linkedin,
   Link as LinkIcon
 } from 'lucide-react';
+
+// Force dynamic rendering to avoid build-time issues
+export const dynamic = 'force-dynamic';
 
 /**
  * Props interface for the blog post page
@@ -282,78 +289,7 @@ interface SocialShareProps {
   post: Post;
 }
 
-function SocialShare({ post }: SocialShareProps) {
-  const postUrl = `https://cloudblog.com/blog/${post.slug}`;
-  const shareText = `Check out "${post.title}" by ${post.author.name}`;
-
-  const shareLinks = [
-    {
-      name: 'Twitter',
-      icon: Twitter,
-      url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(postUrl)}`,
-      color: 'hover:text-blue-500'
-    },
-    {
-      name: 'Facebook',
-      icon: Facebook,
-      url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`,
-      color: 'hover:text-blue-600'
-    },
-    {
-      name: 'LinkedIn',
-      icon: Linkedin,
-      url: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(postUrl)}`,
-      color: 'hover:text-blue-700'
-    },
-    {
-      name: 'Copy Link',
-      icon: LinkIcon,
-      url: '#',
-      color: 'hover:text-green-600',
-      onClick: () => {
-        navigator.clipboard.writeText(postUrl);
-        // TODO: Show toast notification
-      }
-    }
-  ];
-
-  return (
-    <div className="flex items-center justify-center space-x-4 rounded-lg border bg-muted/20 p-6">
-      <span className="text-sm font-medium text-muted-foreground">Share this post:</span>
-      <div className="flex space-x-2">
-        {shareLinks.map((link) => {
-          const IconComponent = link.icon;
-          return (
-            <Button
-              key={link.name}
-              variant="ghost"
-              size="sm"
-              className={cn("h-9 w-9 p-0 transition-colors", link.color)}
-              asChild={!link.onClick}
-              onClick={link.onClick}
-            >
-              {link.onClick ? (
-                <div>
-                  <IconComponent className="h-4 w-4" />
-                  <span className="sr-only">{link.name}</span>
-                </div>
-              ) : (
-                <Link
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`Share on ${link.name}`}
-                >
-                  <IconComponent className="h-4 w-4" />
-                </Link>
-              )}
-            </Button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+// ...SocialShare component moved to a client component in components/blog/SocialShare.tsx
 
 /**
  * Related Posts Component
@@ -477,6 +413,12 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             }>
               <RelatedPosts currentPost={post} />
             </Suspense>
+
+            {/* Comments Section - Suspense fallback added */}
+            <Suspense fallback={<div>Loading comments...</div>}>
+              {/* Add this below SocialShare or wherever you want comments */}
+              <CommentSystem postId={post.id} />
+            </Suspense>
           </div>
         </div>
 
@@ -512,21 +454,5 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   } catch (error) {
     console.error('Error loading blog post:', error);
     throw error;
-  }
-}
-
-/**
- * Generate static params for static generation
- * This enables static generation of blog post pages at build time
- */
-export async function generateStaticParams() {
-  try {
-    const posts = await getAllPosts();
-    return posts.map((post) => ({
-      slug: post.slug,
-    }));
-  } catch (error) {
-    console.error('Error generating static params:', error);
-    return [];
   }
 }
