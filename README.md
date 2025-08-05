@@ -51,7 +51,13 @@ pnpm run build
 
 ## Deployment
 
-### Vercel (Recommended)
+### GitHub Pages (Recommended)
+1. Push your code to GitHub
+2. Enable GitHub Pages in repository settings
+3. Set source to "GitHub Actions"
+4. The workflow will automatically deploy on push to main branch
+
+### Vercel
 1. Push your code to GitHub
 2. Connect your repository to Vercel
 3. Deploy automatically on every push
@@ -61,10 +67,6 @@ pnpm run build
 2. Connect your repository to Netlify
 3. Set build command: `pnpm run build`
 4. Set publish directory: `out`
-
-### GitHub Pages
-1. Add GitHub Actions workflow for automatic deployment
-2. Deploy to `gh-pages` branch
 
 ### Any Static Host
 1. Run `pnpm run build`

@@ -8,9 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "static": "next build",
-    "setup-db": "node --loader ts-node/esm scripts/setup-database.ts",
-    "seed": "node --loader ts-node/esm scripts/seed.ts"
+    "export": "next build",
+    "deploy": "next build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
