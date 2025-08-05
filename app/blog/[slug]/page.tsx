@@ -3,10 +3,48 @@ import Link from 'next/link'
 import { Calendar, Clock, ArrowLeft } from 'lucide-react'
 import { getPostBySlug, getAllPosts } from '@/data/posts'
 import { MarkdownRenderer } from '@/components/MarkdownRenderer'
+import type { Metadata } from 'next'
 
 interface PostPageProps {
   params: {
     slug: string
+  }
+}
+
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const post = getPostBySlug(params.slug)
+  
+  if (!post) {
+    return {
+      title: 'Post Not Found',
+      description: 'The requested blog post could not be found.',
+    }
+  }
+
+  return {
+    title: post.title,
+    description: post.excerpt,
+    openGraph: {
+      title: post.title,
+      description: post.excerpt,
+      type: 'article',
+      publishedTime: post.publishedAt,
+      authors: ['Your Name'],
+      images: [
+        {
+          url: post.thumbnail,
+          width: 800,
+          height: 400,
+          alt: post.title,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.excerpt,
+      images: [post.thumbnail],
+    },
   }
 }
 
@@ -35,6 +73,19 @@ export default function PostPage({ params }: PostPageProps) {
           <ArrowLeft className="h-4 w-4" />
           <span>Back to all posts</span>
         </Link>
+      </div>
+
+      {/* Hero Image */}
+      <div className="mb-8">
+        <div className="relative w-full h-64 md:h-80 rounded-xl overflow-hidden">
+          <img
+            src={post.thumbnail}
+            alt={post.title}
+            className="w-full h-full object-cover"
+            loading="eager"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+        </div>
       </div>
 
       {/* Header */}

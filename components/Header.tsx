@@ -2,7 +2,7 @@
 
 import { useTheme } from './ThemeProvider'
 import { useSidebar } from './SidebarContext'
-import { Moon, Sun, Menu, Search } from 'lucide-react'
+import { Moon, Sun, Menu, Search, Rss } from 'lucide-react'
 
 export default function Header() {
   const { theme, toggleTheme } = useTheme()
@@ -40,14 +40,24 @@ export default function Header() {
             </div>
           </div>
 
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            className="p-2.5 hover:bg-accent rounded-lg transition-colors"
-            aria-label="Toggle theme"
-          >
-            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </button>
+          {/* RSS Feed and Theme Toggle */}
+          <div className="flex items-center space-x-2">
+            <a
+              href="/feed.xml"
+              className="p-2.5 hover:bg-accent rounded-lg transition-colors"
+              aria-label="RSS Feed"
+              title="RSS Feed"
+            >
+              <Rss className="h-5 w-5" />
+            </a>
+            <button
+              onClick={toggleTheme}
+              className="p-2.5 hover:bg-accent rounded-lg transition-colors"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
       </div>
     </header>

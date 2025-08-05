@@ -8,56 +8,16 @@ interface PostCardProps {
   post: Post
 }
 
-// Function to get relevant Unsplash image based on post content
-function getUnsplashImage(post: Post): string {
-  const { title, tags } = post
-  
-  // Create search terms based on title and tags
-  const searchTerms = [
-    ...tags,
-    ...title.toLowerCase().split(' ').filter(word => word.length > 3)
-  ]
-  
-  // Map specific terms to Unsplash search queries
-  const imageMap: Record<string, string> = {
-    'nextjs': 'nextjs,react,web-development',
-    'typescript': 'typescript,programming,code',
-    'ai': 'artificial-intelligence,technology,future',
-    'startup': 'startup,business,entrepreneurship',
-    'software': 'software,programming,technology',
-    'development': 'programming,code,technology',
-    'psychology': 'psychology,mind,human-behavior',
-    'design': 'design,creativity,art',
-    'technology': 'technology,innovation,future',
-    'general': 'abstract,minimal,modern'
-  }
-  
-  // Find the best matching term
-  let bestMatch = 'general'
-  for (const term of searchTerms) {
-    if (imageMap[term.toLowerCase()]) {
-      bestMatch = term.toLowerCase()
-      break
-    }
-  }
-  
-  // Generate Unsplash URL with the search term
-  const searchQuery = imageMap[bestMatch] || 'technology'
-  return `https://source.unsplash.com/400x300/?${searchQuery}`
-}
-
 export function PostCard({ post }: PostCardProps) {
-  const imageUrl = getUnsplashImage(post)
-
   return (
     <article className="group bg-card border border-border rounded-xl p-6 hover:shadow-lg hover:border-border/60 transition-all duration-200">
       <div className="flex items-start space-x-6">
         {/* Thumbnail Image */}
-        <div className="flex-shrink-0 w-24 h-24 bg-muted rounded-lg overflow-hidden">
+        <div className="flex-shrink-0 w-32 h-24 bg-muted rounded-lg overflow-hidden">
           <img
-            src={imageUrl}
+            src={post.thumbnail}
             alt={post.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
             loading="lazy"
             onError={(e) => {
               // Fallback to a placeholder if image fails to load

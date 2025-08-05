@@ -7,6 +7,7 @@ export interface Post {
   publishedAt: string
   readTime: number
   content: string
+  thumbnail: string
 }
 
 export const posts: Post[] = [
@@ -18,6 +19,7 @@ export const posts: Post[] = [
     tags: ['Software'],
     publishedAt: '2024-01-15',
     readTime: 5,
+    thumbnail: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&h=400&fit=crop',
     content: `
 # Getting Started with Next.js
 
@@ -94,6 +96,7 @@ Next.js is the perfect framework for building modern web applications. Start you
     tags: ['AI'],
     publishedAt: '2024-01-10',
     readTime: 8,
+    thumbnail: 'https://images.unsplash.com/photo-1677442136019-21780ecadf41?w=800&h=400&fit=crop',
     content: `
 # The Future of AI in Development
 
@@ -165,6 +168,7 @@ The future of development is AI-assisted, not AI-replaced. Embrace the tools whi
     tags: ['Startup'],
     publishedAt: '2024-01-05',
     readTime: 12,
+    thumbnail: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=400&fit=crop',
     content: `
 # Building a Startup from Scratch
 
@@ -280,6 +284,7 @@ Building a startup is a marathon, not a sprint. Prepare for the long haul and en
     tags: ['Software'],
     publishedAt: '2024-01-01',
     readTime: 6,
+    thumbnail: 'https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=800&h=400&fit=crop',
     content: `
 # Why I Switched to TypeScript
 
@@ -462,6 +467,7 @@ The future of JavaScript development is typed. Don't get left behind.
     tags: ['General'],
     publishedAt: '2023-12-28',
     readTime: 10,
+    thumbnail: 'https://images.unsplash.com/photo-1558655146-d09347e92766?w=800&h=400&fit=crop',
     content: `
 # The Psychology of Product Design
 

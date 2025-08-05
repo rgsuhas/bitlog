@@ -9,8 +9,32 @@ import Sidebar from '@/components/Sidebar'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Minimal Blog',
-  description: 'A minimal, functional blog',
+  metadataBase: new URL('https://yourdomain.com'),
+  title: {
+    default: 'Minimal Blog',
+    template: '%s | Minimal Blog'
+  },
+  description: 'A minimal, functional blog with insights on technology and development',
+  keywords: ['blog', 'technology', 'development', 'nextjs', 'typescript', 'react'],
+  authors: [{ name: 'Your Name' }],
+  creator: 'Your Name',
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://yourdomain.com',
+    title: 'Minimal Blog',
+    description: 'A minimal, functional blog with insights on technology and development',
+    siteName: 'Minimal Blog',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Minimal Blog',
+    description: 'A minimal, functional blog with insights on technology and development',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 }
 
 export default function RootLayout({
