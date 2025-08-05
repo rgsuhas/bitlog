@@ -11,6 +11,8 @@ A clean, minimal blog built with Next.js and Tailwind CSS. Fully static and depl
 - **Search functionality** (UI ready)
 - **Sidebar navigation** with hamburger menu
 - **Horizontal post cards** with thumbnails
+- **Hero images** for blog posts and homepage
+- **Image optimization** with Unsplash integration
 - **Static export** for deployment anywhere
 - **SEO optimized** with metadata and sitemap
 - **RSS feed** for subscribers
@@ -22,6 +24,7 @@ A clean, minimal blog built with Next.js and Tailwind CSS. Fully static and depl
 - **Tailwind CSS** - Styling
 - **TypeScript** - Type safety
 - **Lucide React** - Icons
+- **Unsplash Images** - High-quality thumbnails
 
 ## Getting Started
 
@@ -72,9 +75,9 @@ pnpm run build
 ```
 ├── app/
 │   ├── layout.tsx      # Root layout with theme provider
-│   ├── page.tsx        # Home page
+│   ├── page.tsx        # Home page with hero post
 │   ├── blog/page.tsx   # Blog listing page
-│   ├── blog/[slug]/    # Individual blog posts
+│   ├── blog/[slug]/    # Individual blog posts with hero images
 │   ├── sitemap.ts      # XML sitemap generation
 │   ├── feed.xml/       # RSS feed
 │   ├── not-found.tsx   # 404 page
@@ -83,20 +86,21 @@ pnpm run build
 │   ├── Header.tsx      # Top navigation
 │   ├── Sidebar.tsx     # Side navigation
 │   ├── TopNav.tsx      # Category filters
-│   ├── PostCard.tsx    # Post display component
+│   ├── PostCard.tsx    # Post display component with thumbnails
 │   └── ThemeProvider.tsx # Theme management
 ├── data/
-│   └── posts.ts        # Blog post data
+│   └── posts.ts        # Blog post data with Unsplash thumbnails
 └── out/                # Static build output
 ```
 
 ## SEO Features
 
 - **Meta tags** for all pages
-- **Open Graph** and Twitter cards
+- **Open Graph** and Twitter cards with images
 - **XML sitemap** at `/sitemap.xml`
 - **RSS feed** at `/feed.xml`
 - **Structured data** for blog posts
+- **Optimized images** with proper sizing
 
 ## Design
 
@@ -105,6 +109,7 @@ pnpm run build
 - **Typography**: Clean, readable fonts with proper hierarchy
 - **Spacing**: Consistent 8px grid system
 - **Colors**: Minimal palette with proper contrast ratios
+- **Images**: High-quality Unsplash thumbnails with hover effects
 
 ## License
 
