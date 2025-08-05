@@ -5,11 +5,12 @@ import { usePathname, useSearchParams } from 'next/navigation'
 
 const categories = [
   { id: 'all', label: 'All', href: '/blog' },
-  { id: 'ai', label: 'AI', href: '/blog?category=ai' },
-  { id: 'startup', label: 'Startup', href: '/blog?category=startup' },
-  { id: 'software', label: 'Software', href: '/blog?category=software' },
-  { id: 'general', label: 'General', href: '/blog?category=general' },
-  { id: 'non-tech', label: 'Non-Tech', href: '/blog?category=non-tech' },
+  { id: 'categories', label: 'Categories', href: '/blog/categories' },
+  { id: 'ai', label: 'AI', href: '/blog/ai' },
+  { id: 'startup', label: 'Startup', href: '/blog/startup' },
+  { id: 'software', label: 'Software', href: '/blog/software' },
+  { id: 'general', label: 'General', href: '/blog/general' },
+  { id: 'non-tech', label: 'Non-Tech', href: '/blog/non-tech' },
 ]
 
 interface TopNavProps {

@@ -879,6 +879,10 @@ export function getPostBySlug(slug: string): Post | undefined {
 export function getPostsByTag(tag: string): Post[] {
   return posts.filter(post => post.tags.includes(tag))
 }
+tags
+export function getPostsByTags(tags: string[]): Post[] {
+  return posts.filter(post => post.tags.some(tag => tags.includes(tag)))
+}
 
 export function getAllPosts(): Post[] {
   return posts.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
@@ -886,4 +890,37 @@ export function getAllPosts(): Post[] {
 
 export function getFeaturedPosts(): Post[] {
   return posts.slice(0, 3)
+}
+
+export function getAllCategories(): string[] {
+  const allTags = posts.flatMap(post => post.tags)
+  return Array.from(new Set(allTags)).sort()
+}
+
+export function getPostsByCategory(category: string): Post[] {
+  // Map URL-friendly category names to actual tag names
+  const categoryMap: Record<string, string> = {
+    'ai': 'AI',
+    'startup': 'Startup',
+    'software': 'Software',
+    'general': 'General',
+    'non-tech': 'Non-Tech'
+  }
+  
+  const tagName = categoryMap[category.toLowerCase()]
+  if (!tagName) return []
+  
+  return getPostsByTag(tagName)
+}
+
+export function getCategoryStats(): Record<string, number> {
+  const stats: Record<string, number> = {}
+  
+  posts.forEach(post => {
+    post.tags.forEach(tag => {
+      stats[tag] = (stats[tag] || 0) + 1
+    })
+  })
+  
+  return stats
 } 
