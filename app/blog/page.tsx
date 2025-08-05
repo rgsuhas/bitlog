@@ -15,7 +15,7 @@ export default function BlogPage() {
         </p>
       </div>
       
-      <TopNav />
+      <TopNav activeCategory="all" />
       
       {/* Posts */}
       <div className="space-y-6">

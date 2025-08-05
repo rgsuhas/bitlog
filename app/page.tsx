@@ -76,10 +76,12 @@ export default function HomePage() {
               {/* Image */}
               <div className="relative h-64 md:h-full">
                 <img
-                  src={heroPost.thumbnail}
+                  src={`${heroPost.thumbnail}&w=600&h=400&fit=crop&crop=center`}
                   alt={heroPost.title}
                   className="w-full h-full object-cover"
                   loading="eager"
+                  width={600}
+                  height={400}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
               </div>
@@ -136,7 +138,7 @@ export default function HomePage() {
       )}
 
       {/* Top Navigation */}
-      <TopNav />
+      <TopNav activeCategory="all" />
 
       {/* Featured Posts */}
       <section>

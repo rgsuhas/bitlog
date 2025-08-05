@@ -12,6 +12,235 @@ export interface Post {
 
 export const posts: Post[] = [
   {
+    id: '6',
+    title: 'Mastering React Hooks',
+    excerpt: 'A comprehensive guide to React Hooks. Learn useState, useEffect, useContext, and custom hooks with practical examples.',
+    slug: 'mastering-react-hooks',
+    tags: ['Software', 'React'],
+    publishedAt: '2024-01-20',
+    readTime: 10,
+    thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=400&fit=crop',
+    content: `
+# Mastering React Hooks
+
+React Hooks have revolutionized how we write functional components. Let's dive deep into the most important hooks and learn how to use them effectively.
+
+## What are Hooks?
+
+Hooks are functions that allow you to "hook into" React state and lifecycle features from function components. They were introduced in React 16.8.
+
+## useState Hook
+
+The most basic hook for managing state:
+
+\`\`\`jsx
+import { useState } from 'react'
+
+function Counter() {
+  const [count, setCount] = useState(0)
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>
+        Increment
+      </button>
+    </div>
+  )
+}
+\`\`\`
+
+### Best Practices
+- **Use multiple useState calls** for unrelated state
+- **Use objects** for related state
+- **Always use the setter function** to update state
+
+## useEffect Hook
+
+For side effects in functional components:
+
+\`\`\`jsx
+import { useEffect, useState } from 'react'
+
+function UserProfile({ userId }) {
+  const [user, setUser] = useState(null)
+  
+  useEffect(() => {
+    // Fetch user data
+    fetchUser(userId).then(setUser)
+  }, [userId]) // Dependency array
+  
+  return <div>{user?.name}</div>
+}
+\`\`\`
+
+### Cleanup Function
+\`\`\`jsx
+useEffect(() => {
+  const subscription = subscribe()
+  
+  return () => {
+    subscription.unsubscribe() // Cleanup
+  }
+}, [])
+\`\`\`
+
+## useContext Hook
+
+For consuming context without nesting:
+
+\`\`\`jsx
+import { createContext, useContext } from 'react'
+
+const ThemeContext = createContext()
+
+function ThemedButton() {
+  const theme = useContext(ThemeContext)
+  return <button className={theme}>Click me</button>
+}
+\`\`\`
+
+## Custom Hooks
+
+Create reusable logic:
+
+\`\`\`jsx
+function useLocalStorage(key, initialValue) {
+  const [storedValue, setStoredValue] = useState(() => {
+    try {
+      const item = window.localStorage.getItem(key)
+      return item ? JSON.parse(item) : initialValue
+    } catch (error) {
+      return initialValue
+    }
+  })
+  
+  const setValue = value => {
+    try {
+      setStoredValue(value)
+      window.localStorage.setItem(key, JSON.stringify(value))
+    } catch (error) {
+      console.log(error)
+    }
+  }
+  
+  return [storedValue, setValue]
+}
+\`\`\`
+
+## useReducer Hook
+
+For complex state logic:
+
+\`\`\`jsx
+function todoReducer(state, action) {
+  switch (action.type) {
+    case 'ADD_TODO':
+      return [...state, action.payload]
+    case 'REMOVE_TODO':
+      return state.filter(todo => todo.id !== action.payload)
+    default:
+      return state
+  }
+}
+
+function TodoList() {
+  const [todos, dispatch] = useReducer(todoReducer, [])
+  
+  return (
+    <div>
+      {todos.map(todo => (
+        <div key={todo.id}>
+          {todo.text}
+          <button onClick={() => dispatch({ type: 'REMOVE_TODO', payload: todo.id })}>
+            Remove
+          </button>
+        </div>
+      ))}
+    </div>
+  )
+}
+\`\`\`
+
+## useMemo and useCallback
+
+For performance optimization:
+
+\`\`\`jsx
+import { useMemo, useCallback } from 'react'
+
+function ExpensiveComponent({ items }) {
+  // Memoize expensive calculation
+  const expensiveValue = useMemo(() => {
+    return items.reduce((acc, item) => acc + item.value, 0)
+  }, [items])
+  
+  // Memoize callback function
+  const handleClick = useCallback(() => {
+    console.log('Button clicked')
+  }, [])
+  
+  return (
+    <div>
+      <p>Total: {expensiveValue}</p>
+      <button onClick={handleClick}>Click me</button>
+    </div>
+  )
+}
+\`\`\`
+
+## Rules of Hooks
+
+1. **Only call hooks at the top level**
+2. **Only call hooks from React functions**
+3. **Hook names must start with "use"**
+
+## Common Mistakes
+
+### ❌ Don't call hooks conditionally
+\`\`\`jsx
+// Wrong
+if (condition) {
+  useEffect(() => {})
+}
+\`\`\`
+
+### ✅ Do call hooks unconditionally
+\`\`\`jsx
+// Correct
+useEffect(() => {
+  if (condition) {
+    // Do something
+  }
+})
+\`\`\`
+
+## Testing Hooks
+
+Use React Testing Library:
+
+\`\`\`jsx
+import { renderHook, act } from '@testing-library/react'
+
+test('useCounter', () => {
+  const { result } = renderHook(() => useCounter())
+  
+  act(() => {
+    result.current.increment()
+  })
+  
+  expect(result.current.count).toBe(1)
+})
+\`\`\`
+
+## Conclusion
+
+Hooks make React components more functional and easier to test. Start with useState and useEffect, then gradually explore more advanced hooks as needed.
+
+Remember: Hooks are powerful, but with great power comes great responsibility. Use them wisely!
+    `
+  },
+  {
     id: '1',
     title: 'Getting Started with Next.js',
     excerpt: 'Learn the basics of Next.js and build your first application. This comprehensive guide covers everything from setup to deployment.',
@@ -96,7 +325,7 @@ Next.js is the perfect framework for building modern web applications. Start you
     tags: ['AI'],
     publishedAt: '2024-01-10',
     readTime: 8,
-    thumbnail: 'https://images.unsplash.com/photo-1677442136019-21780ecadf41?w=800&h=400&fit=crop',
+    thumbnail: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&h=400&fit=crop',
     content: `
 # The Future of AI in Development
 

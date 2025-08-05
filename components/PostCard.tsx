@@ -15,10 +15,12 @@ export function PostCard({ post }: PostCardProps) {
         {/* Thumbnail Image */}
         <div className="flex-shrink-0 w-32 h-24 bg-muted rounded-lg overflow-hidden">
           <img
-            src={post.thumbnail}
+            src={`${post.thumbnail}&w=256&h=192&fit=crop&crop=center`}
             alt={post.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
             loading="lazy"
+            width={256}
+            height={192}
             onError={(e) => {
               // Fallback to a placeholder if image fails to load
               const target = e.target as HTMLImageElement

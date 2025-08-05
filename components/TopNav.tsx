@@ -1,8 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 
 const categories = [
   { id: 'all', label: 'All', href: '/blog' },
@@ -13,10 +12,11 @@ const categories = [
   { id: 'non-tech', label: 'Non-Tech', href: '/blog?category=non-tech' },
 ]
 
-export function TopNav() {
-  const pathname = usePathname()
-  const [activeCategory, setActiveCategory] = useState('all')
+interface TopNavProps {
+  activeCategory?: string
+}
 
+export function TopNav({ activeCategory = 'all' }: TopNavProps) {
   return (
     <nav className="border-b border-border/40 pb-6 mb-8">
       <div className="flex items-center space-x-1 overflow-x-auto pb-2">
@@ -31,7 +31,6 @@ export function TopNav() {
                 : 'text-muted-foreground hover:text-foreground hover:bg-accent'
               }
             `}
-            onClick={() => setActiveCategory(category.id)}
           >
             {category.label}
           </Link>

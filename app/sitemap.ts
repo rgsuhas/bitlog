@@ -26,6 +26,36 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     { 
+      url: `${baseUrl}/blog/ai/`, 
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.6,
+    },
+    { 
+      url: `${baseUrl}/blog/startup/`, 
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.6,
+    },
+    { 
+      url: `${baseUrl}/blog/software/`, 
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.6,
+    },
+    { 
+      url: `${baseUrl}/blog/general/`, 
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.6,
+    },
+    { 
+      url: `${baseUrl}/blog/non-tech/`, 
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.6,
+    },
+    { 
       url: `${baseUrl}/about/`, 
       lastModified: new Date(),
       changeFrequency: 'monthly' as const,

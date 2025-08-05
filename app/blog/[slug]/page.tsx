@@ -79,10 +79,12 @@ export default function PostPage({ params }: PostPageProps) {
       <div className="mb-8">
         <div className="relative w-full h-64 md:h-80 rounded-xl overflow-hidden">
           <img
-            src={post.thumbnail}
+            src={`${post.thumbnail}&w=800&h=400&fit=crop&crop=center`}
             alt={post.title}
             className="w-full h-full object-cover"
             loading="eager"
+            width={800}
+            height={400}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
         </div>
