@@ -879,7 +879,6 @@ export function getPostBySlug(slug: string): Post | undefined {
 export function getPostsByTag(tag: string): Post[] {
   return posts.filter(post => post.tags.includes(tag))
 }
-tags
 export function getPostsByTags(tags: string[]): Post[] {
   return posts.filter(post => post.tags.some(tag => tags.includes(tag)))
 }

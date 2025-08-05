@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useSidebar } from './SidebarContext'
-import { Home, BookOpen, Tag, User, X } from 'lucide-react'
+import { Home, BookOpen, User, X } from 'lucide-react'
 
 export default function Sidebar() {
   const { isOpen, closeSidebar } = useSidebar()
@@ -10,7 +10,6 @@ export default function Sidebar() {
   const navigation = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/blog', label: 'All Posts', icon: BookOpen },
-    { href: '/tags', label: 'All Tags', icon: Tag },
     { href: '/about', label: 'About', icon: User },
   ]
 
