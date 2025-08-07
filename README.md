@@ -32,7 +32,10 @@ pnpm dev
 
 ## Project Structure
 
+
 ```
+
+
 ├── app/
 │   ├── layout.tsx      # Root layout with theme provider
 │   ├── page.tsx        # Home page with hero post
@@ -51,5 +54,8 @@ pnpm dev
 ├── data/
 │   └── posts.ts        # Blog post data with Unsplash thumbnails
 └── out/                # Static build output
+
+
 ```
+
 ---
