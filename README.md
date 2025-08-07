@@ -1,11 +1,12 @@
 
-# Minimal Blog
+# Bitlog: Minimal Blog
 
 Clean, responsive blog built with **Next.js 13**, **Tailwind CSS**, and **TypeScript**. Ideal for tech writing, startups, and personal notes. Fully static, fast, and deployable anywhere.
 
-🔗 **Live Site**: [https://minimal-blog.vercel.app](https://minimal-blog.vercel.app)  
+🔗 **Live Site**: [https://bitlog-eight.vercel.app/](https://bitlog-eight.vercel.app/)  
 🖼️  
-![Homepage Preview](https://minimal-blog.vercel.app/og.png)
+![Homepage Preview](<img width="1911" height="993" alt="image" src="https://github.com/user-attachments/assets/c4771118-109a-40b2-88fd-d9ebcc8c4450" />
+)
 
 ---
 
