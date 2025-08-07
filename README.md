@@ -7,6 +7,8 @@ Clean, responsive blog built with **Next.js 13**, **Tailwind CSS**, and **TypeSc
 🖼️  
 ![Homepage Preview](<img width="1911" height="993" alt="image" src="https://github.com/user-attachments/assets/c4771118-109a-40b2-88fd-d9ebcc8c4450" />
 )
+<img width="1200" height="893" alt="image" src="https://github.com/user-attachments/assets/b0f5ce08-3ee4-4530-a3fe-01f67cda3f6d" />
+
 
 ---
 
@@ -28,7 +30,7 @@ Clean, responsive blog built with **Next.js 13**, **Tailwind CSS**, and **TypeSc
 ```bash
 pnpm install
 pnpm dev
-
+```
 
 ## Project Structure
 
