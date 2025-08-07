@@ -1,29 +1,21 @@
 
-# Bitlog: Minimal Blog
+# Bitlog
 
-Clean, responsive blog built with **Next.js 13**, **Tailwind CSS**, and **TypeScript**. Ideal for tech writing, startups, and personal notes. Fully static, fast, and deployable anywhere.
+A minimal, responsive blog built with **Next.js 13**, **Tailwind CSS**, and **TypeScript**. Designed for tech writing, startups, and personal notes. Fully static, fast, and deployable anywhere.
 
-🔗 **Live Site**: [https://bitlog-eight.vercel.app/](https://bitlog-eight.vercel.app/)  
-🖼️  
-![Homepage Preview](<img width="1911" height="993" alt="image" src="https://github.com/user-attachments/assets/c4771118-109a-40b2-88fd-d9ebcc8c4450" />
-)
-<img width="1200" height="893" alt="image" src="https://github.com/user-attachments/assets/b0f5ce08-3ee4-4530-a3fe-01f67cda3f6d" />
+🔗 **Live Site**: [https://bitlog-eight.vercel.app/](https://bitlog-eight.vercel.app/)
 
-
----
+![Homepage Preview](https://github.com/user-attachments/assets/c4771118-109a-40b2-88fd-d9ebcc8c4450)
 
 ## Features
 
-- Dark mode by default with toggle  
-- Responsive, mobile-first layout  
-- Post categories: AI, Software, Startup, etc.  
-- Sidebar with hamburger nav  
-- Search-ready UI  
-- SEO + RSS + Sitemap  
-- Static export (`out/`)  
-- Blog thumbnails from Unsplash  
-
----
+- **Dark Mode**: Default dark theme with toggle
+- **Responsive Design**: Mobile-first layout
+- **Category Filtering**: AI, Software, Startup, General, Non-Tech
+- **Navigation**: Sidebar with hamburger menu
+- **SEO Optimized**: Meta tags, sitemap, RSS feed
+- **Static Export**: Deploy anywhere with `out/` directory
+- **Image Integration**: Blog thumbnails from Unsplash
 
 ## Quick Start
 
@@ -34,10 +26,7 @@ pnpm dev
 
 ## Project Structure
 
-
 ```
-
-
 ├── app/
 │   ├── layout.tsx      # Root layout with theme provider
 │   ├── page.tsx        # Home page with hero post
@@ -56,8 +45,37 @@ pnpm dev
 ├── data/
 │   └── posts.ts        # Blog post data with Unsplash thumbnails
 └── out/                # Static build output
-
-
 ```
 
----
+## Building for Production
+
+```bash
+pnpm run build
+```
+
+## Deployment
+
+### GitHub Pages
+Automatically deployed via GitHub Actions. Push to `main` branch to trigger deployment.
+
+### Vercel
+Connect your repository to Vercel for automatic deployments.
+
+### Netlify
+Deploy the `out/` directory to Netlify for static hosting.
+
+## Adding New Posts
+
+Edit `data/posts.ts` to add new blog posts with the following structure:
+
+```typescript
+{
+  id: 'unique-id',
+  title: 'Post Title',
+  excerpt: 'Brief description',
+  content: 'Full markdown content',
+  tags: ['category'],
+  thumbnail: 'https://images.unsplash.com/...',
+  date: '2024-01-01'
+}
+```

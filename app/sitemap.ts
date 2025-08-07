@@ -3,7 +3,7 @@ import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const posts = getAllPosts()
-  const baseUrl = 'https://yourdomain.com'
+  const baseUrl = 'https://bitlog-eight.vercel.app'
   
   const postUrls = posts.map((post) => ({
     url: `${baseUrl}/blog/${post.slug}/`,

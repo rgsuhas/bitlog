@@ -9,7 +9,7 @@ import Sidebar from '@/components/Sidebar'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://yourdomain.com'),
+  metadataBase: new URL('https://bitlog-eight.vercel.app'),
   title: {
     default: 'Minimal Blog',
     template: '%s | Minimal Blog'
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://yourdomain.com',
+          url: 'https://bitlog-eight.vercel.app',
     title: 'Minimal Blog',
     description: 'A minimal, functional blog with insights on technology and development',
     siteName: 'Minimal Blog',
