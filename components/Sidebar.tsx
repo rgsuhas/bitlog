@@ -64,7 +64,7 @@ export default function Sidebar() {
           {/* Footer */}
           <div className="pt-4 border-t border-border/50">
             <p className="text-xs text-muted-foreground text-center">
-              © 2024 Minimal Blog
+              © 2024 Bitlog
             </p>
           </div>
         </nav>

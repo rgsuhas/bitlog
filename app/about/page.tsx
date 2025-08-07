@@ -109,10 +109,10 @@ export default function AboutPage() {
           <div className="flex items-center justify-center space-x-2">
             <Mail className="h-5 w-5 text-primary" />
             <a
-              href="mailto:hello@minimalblog.com"
+              href="mailto:rgsuhas6364@gmail.com"
               className="text-primary hover:underline font-medium"
             >
-              hello@minimalblog.com
+              rgsuhas6364@gmail.com
             </a>
           </div>
         </section>

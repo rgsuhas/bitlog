@@ -10,9 +10,9 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://bitlog-eight.vercel.app'),
-  title: {
-    default: 'Minimal Blog',
-    template: '%s | Minimal Blog'
+    title: {
+    default: 'Bitlog',
+    template: '%s | Bitlog'
   },
   description: 'A minimal, functional blog with insights on technology and development',
   keywords: ['blog', 'technology', 'development', 'nextjs', 'typescript', 'react'],
@@ -21,22 +21,22 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-          url: 'https://bitlog-eight.vercel.app',
-    title: 'Minimal Blog',
+    url: 'https://bitlog-eight.vercel.app',
+    title: 'Bitlog',
     description: 'A minimal, functional blog with insights on technology and development',
-    siteName: 'Minimal Blog',
+    siteName: 'Bitlog',
     images: [
       {
         url: '/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'Minimal Blog',
+        alt: 'Bitlog',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Minimal Blog',
+    title: 'Bitlog',
     description: 'A minimal, functional blog with insights on technology and development',
     images: ['/og-image.jpg'],
   },
