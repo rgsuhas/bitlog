@@ -3,7 +3,7 @@
 
 A minimal, responsive blog built with **Next.js 13**, **Tailwind CSS**, and **TypeScript**. Designed for tech writing, startups, and personal notes. Fully static, fast, and deployable anywhere.
 
-🔗 **Live Site**: [https://bitlog-eight.vercel.app/](https://bitlog-eight.vercel.app/)
+🔗 **Live Site**: [https://rg-bitlog.vercel.app/](https://rg-bitlog.vercel.app/)
 
 ![Homepage Preview](https://github.com/user-attachments/assets/c4771118-109a-40b2-88fd-d9ebcc8c4450)
 
